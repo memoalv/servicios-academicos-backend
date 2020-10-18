@@ -14,7 +14,6 @@ module.exports = {
       typeCast: true,
     },
     timezone: "America/Denver", //for writing to database
-    seederStorage: "sequelize"
   },
   test: {
     username: "root",
