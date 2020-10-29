@@ -17,6 +17,7 @@ module.exports = {
           tipo_usuario_id: 1,
           instituto_id: 1,
           programa_id: 1,
+          inicio_sesion: 0,
           created_at: new Date(),
           updated_at: new Date(),
         },
@@ -30,6 +31,7 @@ module.exports = {
           tipo_usuario_id: 2,
           instituto_id: 1,
           programa_id: 1,
+          inicio_sesion: 0,
           created_at: new Date(),
           updated_at: new Date(),
         }
