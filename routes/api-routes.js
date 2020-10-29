@@ -3,10 +3,8 @@
 const express = require('express')
 const router = express.Router();
 
-/**
- * Authenticate routes via keycloak
- */
-const test = require('../controllers/test-controller')
-router.get('/test', test.save);
+
+const user = require('../controllers/user-controller')
+router.post('/signup', user.signUp);
 
 module.exports = router;
