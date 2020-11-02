@@ -9,6 +9,18 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "rol_id",
         otherKey: "usuario_id",
       });
+      Roles.belongsToMany(models.Tramite, {
+        through: models.RolesTramites,
+        as: "tramites",
+        foreignKey: "rol_id",
+        otherKey: "tramite_id",
+      });
+      Roles.belongsToMany(models.Permiso, {
+        through: models.RolesPermisos,
+        as: "permisos",
+        foreignKey: "rol_id",
+        otherKey: "permiso_id",
+      });
     }
   }
   Roles.init(

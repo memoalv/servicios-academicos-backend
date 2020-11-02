@@ -8,7 +8,7 @@ router.use('/api', require('./api-routes'));
 /**
  * Ping endpoint
  */
-router.use('/api/status/ping', function(req, res) {
+router.get('/api/status/ping', function(req, res) {
 	res.send('pong')
 });
 
