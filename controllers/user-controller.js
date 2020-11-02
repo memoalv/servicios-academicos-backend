@@ -1,12 +1,77 @@
 "use strict";
+const jwt = require("jsonwebtoken");
+const { validationResult, body } = require("express-validator");
+const mailer = require("../services/mail-service");
+const authService = require("../services/auth-service");
+const crypto = require("crypto");
 const db = require("../models");
 const Usuario = db.Usuario;
 const Roles = db.Roles;
 const RolesUsuarios = db.RolesUsuarios;
-const crypto = require("crypto");
-const mailer = require("../services/mail-service");
 
+const validacionLogIn = [body("correo").isEmail(), body("contrasena").not().isEmpty().not().isBoolean()];
+const logIn = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  let usuario = null;
+  try {
+    usuario = await authService.datosAutenticacion(req.body.correo);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json();
+  }
+
+  // si no existe el usuario se regresa mensaje criptico
+  // para engañar al enemigo
+  if (!usuario) {
+    return res.status(401).json({
+      mensaje: "Contraseña incorrecta",
+    });
+  }
+
+  const contrasenaRecibida = String(req.body.contrasena);
+  const contraHasheada = crypto.pbkdf2Sync(contrasenaRecibida, usuario.sal, 10000, 64, "sha512").toString("hex");
+  if (usuario.contrasena !== contraHasheada) {
+    return res.status(401).json({
+      mensaje: "Contraseña incorrecta",
+    });
+  }
+
+  const tokenClaims = authService.parsePermisos(usuario.roles);
+  const token = jwt.sign(tokenClaims, process.env.APP_SECRET, {
+    expiresIn: "12h",
+    issuer: "servicios-academicos-backend"
+  });
+
+  return res.status(200).json({
+    mensaje: "Correcto",
+    token: token,
+  });
+};
+
+const validacionSignUp = [
+  body("tipo_usuario").isIn(["Incorporado", "Alumno"]),
+  body("matricula").optional().isInt(),
+  body("correo").optional().isEmail().normalizeEmail(),
+  body("nombre").not().isEmpty().trim(),
+  body("instituto").optional().not().isEmpty().trim(),
+  body("programa").optional().not().isEmpty().trim(),
+];
+/**
+ * Funcion singUp. Maneja el registro de nuevos usuarios al sistema
+ *
+ * @param {*} req
+ * @param {*} res
+ */
 const signUp = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
   const nuevoUsuario = req.body;
 
   // extraccion de campos para el creado del usuario
@@ -14,7 +79,7 @@ const signUp = async (req, res) => {
   let correoUsuario = "";
   if (nuevoUsuario.tipo_usuario == "Alumno") {
     clausulaWhere.matricula = nuevoUsuario.matricula;
-    correoUsuario = `${nuevoUsuario.matricula}@alumnos.uacj.mx`;
+    correoUsuario = `al${nuevoUsuario.matricula}@alumnos.uacj.mx`;
     nuevoUsuario.correo = correoUsuario;
   } else {
     clausulaWhere.correo = nuevoUsuario.correo;
@@ -128,6 +193,23 @@ const signUp = async (req, res) => {
   });
 };
 
+const validacionCambiarContrasena = [
+  body("contrasena_anterior").not().isEmpty().not().isBoolean(),
+  body("contrasena").not().isEmpty().not().isBoolean(),
+  body("contrasena_confirmacion").not().isEmpty().not().isBoolean(),
+];
+const cambiarContrasena = (req, res) => {
+  console.log(req.body);
+  console.log(req.tokenParseado);
+
+  return res.status(200).json();
+};
+
 module.exports = {
+  validacionLogIn,
+  logIn,
+  validacionSignUp,
   signUp,
+  validacionCambiarContrasena,
+  cambiarContrasena,
 };
