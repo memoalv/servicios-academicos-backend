@@ -2,24 +2,17 @@
 const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
   class RolesUsuarios extends Model {
-    /**
-     * Helper method for defining associations.
-     * This method is not a part of Sequelize lifecycle.
-     * The `models/index` file will call this method automatically.
-     */
-    static associate(models) {
-      // define association here
-    }
+    static associate(models) {}
   }
   RolesUsuarios.init(
     {
       rol_id: {
         type: DataTypes.INTEGER,
-        field: "rol_id"
+        field: "rol_id",
       },
       usuario_id: {
         type: DataTypes.INTEGER,
-        field: "usuario_id"
+        field: "usuario_id",
       },
     },
     {
