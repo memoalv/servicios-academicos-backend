@@ -40,10 +40,33 @@ const logIn = async (req, res) => {
     });
   }
 
-  const tokenClaims = authService.parsePermisos(usuario.roles);
+  if (!usuario.inicio_sesion) {
+    const [numberOfAffectedRows, affectedRows] = await Usuario.update(
+      {
+        inicio_sesion: true,
+      },
+      {
+        where: {
+          correo: usuario.correo,
+        },
+        returning: true,
+      }
+    );
+
+    if (affectedRows !== 1) {
+      return res.status(500).json();
+    }
+  }
+
+  const { grupos, permisos } = authService.parsePermisos(usuario.roles);
+  const tokenClaims = {
+    usuario: req.body.correo,
+    grupos: grupos,
+    permisos: permisos,
+  };
   const token = jwt.sign(tokenClaims, process.env.APP_SECRET, {
     expiresIn: "12h",
-    issuer: "servicios-academicos-backend"
+    issuer: "servicios-academicos-backend",
   });
 
   return res.status(200).json({
@@ -195,15 +218,61 @@ const signUp = async (req, res) => {
 
 const validacionCambiarContrasena = [
   body("contrasena_anterior").not().isEmpty().not().isBoolean(),
-  body("contrasena").not().isEmpty().not().isBoolean(),
+  body("contrasena_nueva").not().isEmpty().not().isBoolean(),
   body("contrasena_confirmacion").not().isEmpty().not().isBoolean(),
 ];
-const cambiarContrasena = (req, res) => {
-  console.log(req.body);
-  console.log(req.tokenParseado);
+const cambiarContrasena = async (req, res) => {
+  try {
+    var usuario = await authService.datosAutenticacion(req.tokenParseado.usuario);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json();
+  }
 
-  return res.status(200).json();
+  const contrasenaRecibida = String(req.body.contrasena_anterior);
+  const contraHasheada = crypto.pbkdf2Sync(contrasenaRecibida, usuario.sal, 10000, 64, "sha512").toString("hex");
+  if (usuario.contrasena !== contraHasheada) {
+    return res.status(400).json({
+      mensaje: "Contraseña anterior incorrecta",
+    });
+  }
+
+  if (String(req.body.contrasena_nueva) !== String(req.body.contrasena_confirmacion)) {
+    return res.status(400).json({
+      mensaje: "Contraseñas no coinciden",
+    });
+  }
+
+  const nuevaSal = crypto.randomBytes(32).toString("hex");
+  const nuevaContraHasheada = crypto
+    .pbkdf2Sync(req.body.contrasena_nueva, nuevaSal, 10000, 64, "sha512")
+    .toString("hex");
+
+  const [numberOfAffectedRows, affectedRows] = await Usuario.update(
+    {
+      contrasena: nuevaContraHasheada,
+      sal: nuevaSal,
+    },
+    {
+      where: {
+        correo: req.tokenParseado.usuario,
+      },
+      returning: true,
+    }
+  );
+
+  if (affectedRows === 1) {
+    return res.status(200).json({
+      mensaje: "Contraseña actualizada correctamente",
+    });
+  }
+
+  return res.status(500).json({
+    mensaje: "Ocurrió un error al actualizar la contraseña",
+  });
 };
+
+// TODO: reset contrasena sin token. hay que ver el flujo con el front para estar seguro de como va a quedar
 
 module.exports = {
   validacionLogIn,

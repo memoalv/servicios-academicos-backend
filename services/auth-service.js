@@ -88,9 +88,6 @@ const parsePermisos = (roles) => {
   };
 };
 
-const test = require("../query-permisos.json");
-parsePermisos(test.roles);
-
 module.exports = {
   datosAutenticacion,
   parsePermisos,
