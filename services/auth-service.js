@@ -75,8 +75,8 @@ const parsePermisos = (roles) => {
       let indiceAccion = permisos[indiceModulo].submodulos[indiceSubmodulo].acciones.findIndex(
         (elem) => elem == permiso.accion.accion
       );
-      
-      if(indiceAccion < 0) {
+
+      if (indiceAccion < 0) {
         permisos[indiceModulo].submodulos[indiceSubmodulo].acciones.push(permiso.accion.accion);
       }
     });
@@ -88,7 +88,25 @@ const parsePermisos = (roles) => {
   };
 };
 
+const verificarPermisos = ({ modulo, submodulo, accion }, permisos) => {
+  const indiceModulo = permisos.findIndex((elem) => elem.nombre == modulo);
+  if (indiceModulo < 0) return false;
+
+  const indiceSubmodulo = permisos[indiceModulo].submodulos.findIndex(
+    (elem) => elem.nombre == submodulo
+  );
+  if (indiceSubmodulo < 0) return false;
+
+  const indiceAccion = permisos[indiceModulo].submodulos[indiceSubmodulo].acciones.findIndex(
+    (elem) => elem == accion
+  );
+  if (indiceAccion < 0) return false;
+
+  return true;
+};
+
 module.exports = {
   datosAutenticacion,
   parsePermisos,
+  verificarPermisos,
 };
