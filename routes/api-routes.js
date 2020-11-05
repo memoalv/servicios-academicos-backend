@@ -14,7 +14,16 @@ router.post(
 );
 
 const programas = require("../controllers/programs-controller");
-router.post("/programas/crear", [authMiddleware, programas.validacionPrograma], programas.crearPrograma);
-router.delete("/programas/eliminar", [authMiddleware, programas.validacionPrograma], programas.eliminarPrograma);
+router.post("/programas/crear", [authMiddleware, programas.validacionCrearPrograma], programas.crearPrograma);
+router.delete(
+  "/programas/eliminar",
+  [authMiddleware, programas.validacionEliminarPrograma],
+  programas.eliminarPrograma
+);
+router.patch(
+  "/programas/actualizar",
+  [authMiddleware, programas.validacionActualizarPrograma],
+  programas.actualizarPrograma
+);
 
 module.exports = router;
