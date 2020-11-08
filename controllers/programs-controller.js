@@ -141,6 +141,10 @@ const actualizarPrograma = async (req, res) => {
   });
 };
 
+const validacionConsultaProgramas = [
+  
+];
+
 module.exports = {
   validacionCrearPrograma,
   crearPrograma,
