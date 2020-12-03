@@ -25,5 +25,28 @@ router.patch(
   [authMiddleware, programas.validacionActualizarPrograma],
   programas.actualizarPrograma
 );
+router.get(
+  "/programas/listar",
+  [authMiddleware, programas.validacionListarProgramas],
+  programas.listarProgramas
+)
+
+const institutos = require("../controllers/campus-controller");
+router.post("/institutos/crear", [authMiddleware, institutos.validacionCrearInstituto], institutos.crearInstituto);
+router.delete(
+  "/institutos/eliminar",
+  [authMiddleware, institutos.validacionEliminarInstituto],
+  institutos.eliminarInstituto
+);
+router.patch(
+  "/institutos/actualizar",
+  [authMiddleware, institutos.validacionActualizarInstituto],
+  institutos.actualizarInstituto
+);
+router.get(
+  "/institutos/listar",
+  [authMiddleware, institutos.validacionListarInstitutos],
+  institutos.listarInstitutos
+)
 
 module.exports = router;
