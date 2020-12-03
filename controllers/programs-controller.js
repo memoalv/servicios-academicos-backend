@@ -1,7 +1,11 @@
-const { validationResult, body } = require("express-validator");
+const { validationResult, body, query } = require("express-validator");
 const { verificarPermisos } = require("../services/auth-service");
+const { calcularOffset } = require("../services/pagination-service");
 const db = require("../models");
 const Programa = db.Programa;
+
+// tal vez pueda crear una clase para mezclar los cruds 
+// simples y facilitar el mantenimiento. (Programas e Institutos)
 
 const validacionCrearPrograma = [body("programa").not().isEmpty().trim()];
 const crearPrograma = async (req, res) => {
@@ -141,9 +145,46 @@ const actualizarPrograma = async (req, res) => {
   });
 };
 
-const validacionConsultaProgramas = [
-  
+const validacionListarProgramas = [
+  query("pagina").not().isEmpty().isInt(),
+  query("resultados_por_pagina").not().isEmpty().isInt(),
 ];
+
+const listarProgramas = async (req, res) => {
+  if (
+    !verificarPermisos(
+      {
+        modulo: "Programas",
+        submodulo: "Listado de programas",
+        accion: "R",
+      },
+      req.tokenParseado.permisos
+    )
+  ) {
+    return res.status(401).send();
+  }
+
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  const pagina = req.query.pagina;
+  const resultados_por_pagina = req.query.resultados_por_pagina;
+  const { offset, limite } = calcularOffset(pagina, resultados_por_pagina);
+
+  try {
+    var programas = await Programa.findAll({ order: [['id', "DESC"]], offset: offset, limit: limite });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).send();
+  }
+
+  return res.status(200).json({
+    mensaje: "Correcto",
+    datos: programas
+  });
+};
 
 module.exports = {
   validacionCrearPrograma,
@@ -152,4 +193,6 @@ module.exports = {
   eliminarPrograma,
   validacionActualizarPrograma,
   actualizarPrograma,
+  validacionListarProgramas,
+  listarProgramas,
 };
