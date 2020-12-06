@@ -11,6 +11,13 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       Ventanilla.hasMany(models.Reservacion)
+
+      Ventanilla.belongsToMany(models.Usuarios, {
+        through: models.UsuariosVentanillas,
+        as: "ventanillas",
+        foreignKey: "ventanilla_id",
+        otherKey: "usuario_id",
+      });
     }
   };
   Ventanilla.init({
