@@ -1,3 +1,4 @@
+const crypto = require("crypto");
 const db = require("../models");
 const Usuario = db.Usuario;
 const routeMap = require("./route-map");
@@ -92,21 +93,28 @@ const verificarPermisos = ({ modulo, submodulo, accion }, permisos) => {
   const indiceModulo = permisos.findIndex((elem) => elem.nombre == modulo);
   if (indiceModulo < 0) return false;
 
-  const indiceSubmodulo = permisos[indiceModulo].submodulos.findIndex(
-    (elem) => elem.nombre == submodulo
-  );
+  const indiceSubmodulo = permisos[indiceModulo].submodulos.findIndex((elem) => elem.nombre == submodulo);
   if (indiceSubmodulo < 0) return false;
 
-  const indiceAccion = permisos[indiceModulo].submodulos[indiceSubmodulo].acciones.findIndex(
-    (elem) => elem == accion
-  );
+  const indiceAccion = permisos[indiceModulo].submodulos[indiceSubmodulo].acciones.findIndex((elem) => elem == accion);
   if (indiceAccion < 0) return false;
 
   return true;
+};
+
+const generarPassword = () => {
+  const randomPass = Math.random().toString(36).slice(-11);
+  const salt = crypto.randomBytes(32).toString("hex");
+  return {
+    contrasena: randomPass,
+    sal: salt,
+    contrasenaHasheada: crypto.pbkdf2Sync(randomPass, salt, 10000, 64, "sha512").toString("hex"),
+  };
 };
 
 module.exports = {
   datosAutenticacion,
   parsePermisos,
   verificarPermisos,
+  generarPassword,
 };

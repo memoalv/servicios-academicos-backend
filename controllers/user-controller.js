@@ -51,29 +51,30 @@ const logIn = async (req, res) => {
         },
         returning: true,
       }
-    );
-
-    if (affectedRows !== 1) {
-      return res.status(500).json();
+      );
+      
+      if (affectedRows !== 1) {
+        return res.status(500).json();
+      }
     }
-  }
-
-  const { grupos, permisos } = authService.parsePermisos(usuario.roles);
-  const tokenClaims = {
-    usuario: req.body.correo,
-    grupos: grupos,
-    permisos: permisos,
+    
+    const { grupos, permisos } = authService.parsePermisos(usuario.roles);
+    const tokenClaims = {
+      usuario: req.body.correo,
+      grupos: grupos,
+      permisos: permisos,
+    };
+    const token = jwt.sign(tokenClaims, process.env.APP_SECRET, {
+      expiresIn: "12h",
+      issuer: "servicios-academicos-backend",
+    });
+    
+    return res.status(200).json({
+      mensaje: "Correcto",
+      token: token,
+    });
   };
-  const token = jwt.sign(tokenClaims, process.env.APP_SECRET, {
-    expiresIn: "12h",
-    issuer: "servicios-academicos-backend",
-  });
 
-  return res.status(200).json({
-    mensaje: "Correcto",
-    token: token,
-  });
-};
 
 const validacionSignUp = [
   body("tipo_usuario").isIn(["Incorporado", "Alumno"]),
@@ -127,13 +128,10 @@ const signUp = async (req, res) => {
     });
   }
 
-  // falta crear contrasena, sal y asociar a su rol correspondiente
-  // enviar la contraseña al correo
-  const contrasenaTemporal = Math.random().toString(36).slice(-11);
-  nuevoUsuario.sal = crypto.randomBytes(32).toString("hex");
-  nuevoUsuario.contrasena = crypto
-    .pbkdf2Sync(contrasenaTemporal, nuevoUsuario.sal, 10000, 64, "sha512")
-    .toString("hex");
+  // creacion de contrasena, sal para el usuario
+  const { contrasena, sal, contrasenaHasheada } = authService.generarPassword();
+  nuevoUsuario.sal = sal;
+  nuevoUsuario.contrasena = contrasenaHasheada;
   nuevoUsuario.inicio_sesion = false;
   nuevoUsuario.instituto_id = nuevoUsuario.instituto;
 
@@ -144,6 +142,7 @@ const signUp = async (req, res) => {
     clausulaWhere.rol = "Incorporado";
   }
 
+  // asignacion de rol al usuario
   let rolUsuario = null;
   try {
     rolUsuario = await Roles.findOne({
@@ -180,16 +179,17 @@ const signUp = async (req, res) => {
         to: correoUsuario,
         from: "noreplygreenhouse@gmail.com",
         subject: "Te registraste correctamente",
-        html: `<h1>Hola ${nuevoUsuario.nombre}, ¡te registraste correctamente!</h1><p>Tu contraseña es: ${contrasenaTemporal}</p><p>Te recomendamos cambiarla inmediatamente por una propia.</p>`,
+        html: `<h1>Hola ${nuevoUsuario.nombre}, ¡te registraste correctamente!</h1><p>Tu contraseña es: ${contrasena}</p><p>Te recomendamos cambiarla inmediatamente por una propia.</p>`,
       });
     } catch (error) {
+      console.error(error);
       throw new Error("correo");
     }
 
     await t.commit();
   } catch (error) {
+    await t.rollback();
     if (error.errors) {
-      await t.rollback();
       // si el correo no es valido se regresa error correspondiente
       const notValidEmailError = error.errors.filter((error) => {
         return error.validatorName == "isEmail" ? true : false;
@@ -273,6 +273,22 @@ const cambiarContrasena = async (req, res) => {
 };
 
 // TODO: reset contrasena sin token. hay que ver el flujo con el front para estar seguro de como va a quedar
+
+/**
+ * tipos de usuarios:
+ Incorporado  -- se crean en signup
+ Alumno       -- igual
+
+ El admin los va a crear
+ * Ventanilla - determinar que ventanilla sera
+    Admin
+ */
+const validacionCrearUsuario = [
+  body("contrasena_anterior").not().isEmpty().not().isBoolean(),
+  body("contrasena_nueva").not().isEmpty().not().isBoolean(),
+  body("contrasena_confirmacion").not().isEmpty().not().isBoolean(),
+];
+
 
 module.exports = {
   validacionLogIn,

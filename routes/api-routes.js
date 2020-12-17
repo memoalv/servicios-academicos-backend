@@ -13,6 +13,11 @@ router.post(
   usuario.cambiarContrasena
 );
 
+/*************************************
+ * 
+ * * Rutas referentes a PROGRAMAS
+ * 
+ */
 const programas = require("../controllers/programs-controller");
 router.post("/programas/crear", [authMiddleware, programas.validacionCrearPrograma], programas.crearPrograma);
 router.delete(
@@ -31,6 +36,11 @@ router.get(
   programas.listarProgramas
 )
 
+/*************************************
+ * 
+ * * Rutas referentes a INSTITUTOS
+ * 
+ */
 const institutos = require("../controllers/campus-controller");
 router.post("/institutos/crear", [authMiddleware, institutos.validacionCrearInstituto], institutos.crearInstituto);
 router.delete(
