@@ -2,18 +2,15 @@ const { validationResult, body, query } = require("express-validator");
 const { verificarPermisos } = require("../services/auth-service");
 const { calcularOffset } = require("../services/pagination-service");
 const db = require("../models");
-const Programa = db.Programa;
+const Instituto = db.Instituto;
 
-// tal vez pueda crear una clase para mezclar los cruds 
-// simples y facilitar el mantenimiento. (Programas e Institutos)
-
-const validacionCrearPrograma = [body("programa").not().isEmpty().trim()];
-const crearPrograma = async (req, res) => {
+const validacionCrearInstituto = [body("instituto").not().isEmpty().trim()];
+const crearInstituto = async (req, res) => {
   if (
     !verificarPermisos(
       {
-        modulo: "Programas",
-        submodulo: "Listado de programas",
+        modulo: "Institutos",
+        submodulo: "Listado de institutos",
         accion: "C",
       },
       req.tokenParseado.permisos
@@ -27,11 +24,11 @@ const crearPrograma = async (req, res) => {
     return res.status(400).json({ errors: errors.array() });
   }
 
-  let existePrograma = false;
+  let existeInstituto = false;
   try {
-    existePrograma = await Programa.findOne({
+    existeInstituto = await Instituto.findOne({
       where: {
-        programa: req.body.programa,
+        instituto: req.body.instituto,
       },
     });
   } catch (error) {
@@ -39,31 +36,31 @@ const crearPrograma = async (req, res) => {
     return res.status(500).json();
   }
 
-  if (!!existePrograma) {
+  if (!!existeInstituto) {
     return res.status(400).json({
-      mensaje: "Programa ya existe",
+      mensaje: "Instituto ya existe",
     });
   }
 
   try {
-    await Programa.create({ programa: req.body.programa });
+    await Instituto.create({ instituto: req.body.instituto });
   } catch (error) {
     console.error(error);
     return res.status(500).send();
   }
 
   return res.status(200).json({
-    mensaje: "Programa creado correctamente",
+    mensaje: "Instituto creado correctamente",
   });
 };
 
-const validacionEliminarPrograma = [body("programa_id").not().isEmpty().isInt()];
-const eliminarPrograma = async (req, res) => {
+const validacionEliminarInstituto = [body("instituto_id").not().isEmpty().isInt()];
+const eliminarInstituto = async (req, res) => {
   if (
     !verificarPermisos(
       {
-        modulo: "Programas",
-        submodulo: "Listado de programas",
+        modulo: "Institutos",
+        submodulo: "Listado de institutos",
         accion: "D",
       },
       req.tokenParseado.permisos
@@ -78,9 +75,9 @@ const eliminarPrograma = async (req, res) => {
   }
 
   try {
-    var numBorrados = await Programa.destroy({
+    var numBorrados = await Instituto.destroy({
       where: {
-        id: req.body.programa_id,
+        id: req.body.instituto_id,
       },
     });
   } catch (error) {
@@ -89,24 +86,24 @@ const eliminarPrograma = async (req, res) => {
   }
 
   if (numBorrados < 1) {
-    return res.status(400).json({ mensaje: "El programa a borrar no existe" });
+    return res.status(400).json({ mensaje: "El instituto a borrar no existe" });
   }
 
   return res.status(200).json({
-    mensaje: "Programa eliminado correctamente",
+    mensaje: "Instituto eliminado correctamente",
   });
 };
 
-const validacionActualizarPrograma = [
-  body("programa_id").not().isEmpty().isInt(),
-  body("programa").not().isEmpty().trim(),
+const validacionActualizarInstituto = [
+  body("instituto_id").not().isEmpty().isInt(),
+  body("instituto").not().isEmpty().trim(),
 ];
-const actualizarPrograma = async (req, res) => {
+const actualizarInstituto = async (req, res) => {
   if (
     !verificarPermisos(
       {
-        modulo: "Programas",
-        submodulo: "Listado de programas",
+        modulo: "Institutos",
+        submodulo: "Listado de institutos",
         accion: "U",
       },
       req.tokenParseado.permisos
@@ -121,13 +118,13 @@ const actualizarPrograma = async (req, res) => {
   }
 
   try {
-    var [numActualizados] = await Programa.update(
+    var [numActualizados] = await Instituto.update(
       {
-        programa: req.body.programa,
+        instituto: req.body.instituto,
       },
       {
         where: {
-          id: req.body.programa_id,
+          id: req.body.instituto_id,
         },
       }
     );
@@ -137,25 +134,25 @@ const actualizarPrograma = async (req, res) => {
   }
 
   if (numActualizados < 1) {
-    return res.status(400).json({ mensaje: "El programa a actualizar no existe" });
+    return res.status(400).json({ mensaje: "El instituto a actualizar no existe" });
   }
 
   return res.status(200).json({
-    mensaje: "Programa actualizado correctamente",
+    mensaje: "Instituto actualizado correctamente",
   });
 };
 
-const validacionListarProgramas = [
+const validacionListarInstitutos = [
   query("pagina").not().isEmpty().isInt(),
   query("resultados_por_pagina").not().isEmpty().isInt(),
 ];
 
-const listarProgramas = async (req, res) => {
+const listarInstitutos = async (req, res) => {
   if (
     !verificarPermisos(
       {
-        modulo: "Programas",
-        submodulo: "Listado de programas",
+        modulo: "Institutos",
+        submodulo: "Listado de institutos",
         accion: "R",
       },
       req.tokenParseado.permisos
@@ -174,7 +171,7 @@ const listarProgramas = async (req, res) => {
   const { offset, limite } = calcularOffset(pagina, resultados_por_pagina);
 
   try {
-    var programas = await Programa.findAll({ order: [['id', "DESC"]], offset: offset, limit: limite });
+    var instituos = await Instituto.findAll({ order: [['instituto', "ASC"]], offset: offset, limit: limite });
   } catch (error) {
     console.error(error);
     return res.status(500).send();
@@ -182,17 +179,17 @@ const listarProgramas = async (req, res) => {
 
   return res.status(200).json({
     mensaje: "Correcto",
-    datos: programas
+    datos: instituos
   });
 };
 
 module.exports = {
-  validacionCrearPrograma,
-  crearPrograma,
-  validacionEliminarPrograma,
-  eliminarPrograma,
-  validacionActualizarPrograma,
-  actualizarPrograma,
-  validacionListarProgramas,
-  listarProgramas,
+  validacionCrearInstituto,
+  crearInstituto,
+  validacionEliminarInstituto,
+  eliminarInstituto,
+  validacionActualizarInstituto,
+  actualizarInstituto,
+  validacionListarInstitutos,
+  listarInstitutos,
 };
