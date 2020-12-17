@@ -12,7 +12,7 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       Ventanilla.hasMany(models.Reservacion)
 
-      Ventanilla.belongsToMany(models.Usuarios, {
+      Ventanilla.belongsToMany(models.Usuario, {
         through: models.UsuariosVentanillas,
         as: "ventanillas",
         foreignKey: "ventanilla_id",

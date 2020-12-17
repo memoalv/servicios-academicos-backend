@@ -22,7 +22,7 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "usuario_id",
         otherKey: "rol_id",
       });
-      Usuario.belongsToMany(models.Ventanillas, {
+      Usuario.belongsToMany(models.Ventanilla, {
         through: models.UsuariosVentanillas,
         as: "ventanillas",
         foreignKey: "usuario_id",
