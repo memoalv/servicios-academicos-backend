@@ -27,12 +27,12 @@ npm run serve
 > **NOTA:** para correr las migraciones hay que tener una conexión funcionando a una instancia de mariaDB y especificarla en el archivo `.env`
 
 ```
-npx sequelize-cli db:migrate
+npm run db-migrate
 ```
 
 ### Comando para correr los *seeders*
 ```
-npx sequelize-cli db:seed:all
+npm run db-seed
 ```
 
 > Con el comando `npx sequelize-cli` puedes ver todos los comandos disponibles del CLI de sequelize
