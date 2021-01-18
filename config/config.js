@@ -17,11 +17,19 @@ module.exports = {
     seederStorage: "sequelize"
   },
   test: {
-    username: "root",
-    password: null,
-    database: "database_test",
-    host: "127.0.0.1",
+    username: process.env.DB_TEST_USERNAME,
+    password: process.env.DB_TEST_PASSWORD,
+    database: process.env.DB_TEST_DATABASE,
+    host: process.env.DB_TEST_HOST,
     dialect: "mariadb",
+    logging: console.log,
+    dialectOptions: {
+      useUTC: false, //for reading from database
+      dateStrings: true,
+      typeCast: true,
+    },
+    timezone: "America/Denver", //for writing to database
+    seederStorage: "sequelize"
   },
   production: {
     username: "root",
