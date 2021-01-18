@@ -68,10 +68,7 @@ module.exports = (sequelize, DataTypes) => {
       },
       instituto_id: {
         type: DataTypes.INTEGER,
-        allowNull: false,
         validate: {
-          isInt: true,
-          notNull: true,
           notEmpty: true,
         },
         field: "instituto_id",
