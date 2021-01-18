@@ -147,20 +147,8 @@ const validacionListarInstitutos = [
   query("resultados_por_pagina").not().isEmpty().isInt(),
 ];
 
+// ruta no protegida pq se utiliza para el select en el signup
 const listarInstitutos = async (req, res) => {
-  if (
-    !verificarPermisos(
-      {
-        modulo: "Institutos",
-        submodulo: "Listado de institutos",
-        accion: "R",
-      },
-      req.tokenParseado.permisos
-    )
-  ) {
-    return res.status(401).send();
-  }
-
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });

@@ -150,20 +150,8 @@ const validacionListarProgramas = [
   query("resultados_por_pagina").not().isEmpty().isInt(),
 ];
 
+// ruta no protegida pq se utiliza para el select en el signup
 const listarProgramas = async (req, res) => {
-  if (
-    !verificarPermisos(
-      {
-        modulo: "Programas",
-        submodulo: "Listado de programas",
-        accion: "R",
-      },
-      req.tokenParseado.permisos
-    )
-  ) {
-    return res.status(401).send();
-  }
-
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
