@@ -1,3 +1,5 @@
+"use strict";
+
 const crypto = require("crypto");
 const db = require("../models");
 const Usuario = db.Usuario;
