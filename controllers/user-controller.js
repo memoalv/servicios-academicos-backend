@@ -28,7 +28,7 @@ const logIn = async (req, res) => {
   // para engañar al enemigo
   if (!usuario) {
     return res.status(401).json({
-      mensaje: "Contraseña incorrecta",
+      mensaje: "Usuario o contraseña incorrecta",
     });
   }
 
@@ -36,7 +36,7 @@ const logIn = async (req, res) => {
   const contraHasheada = crypto.pbkdf2Sync(contrasenaRecibida, usuario.sal, 10000, 64, "sha512").toString("hex");
   if (usuario.contrasena !== contraHasheada) {
     return res.status(401).json({
-      mensaje: "Contraseña incorrecta",
+      mensaje: "Usuario o contraseña incorrecta",
     });
   }
 
@@ -57,9 +57,10 @@ const logIn = async (req, res) => {
         return res.status(500).json();
       }
     }
-    
+
     const { grupos, permisos } = authService.parsePermisos(usuario.roles);
     const tokenClaims = {
+      nombre: usuario.nombre,
       usuario: req.body.correo,
       grupos: grupos,
       permisos: permisos,

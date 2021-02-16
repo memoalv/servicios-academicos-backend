@@ -14,7 +14,7 @@ const routeMap = require("./route-map");
  */
 const datosAutenticacion = async (correo) => {
   let datosAutenticacion = await Usuario.findOne({
-    attributes: ["correo", "contrasena", "sal", "inicio_sesion"],
+    attributes: ["nombre", "correo", "contrasena", "sal", "inicio_sesion"],
     where: {
       correo: correo,
     },
