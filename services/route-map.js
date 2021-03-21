@@ -11,37 +11,37 @@ module.exports = {
    */
   Trámites: {
     nombre: "Trámites",
-    icono: "mdi-account",
+    icono: "library_books",
     ruta: "",
     submodulos: [],
   },
   Ventanillas: {
     nombre: "Ventanillas",
-    icono: "mdi-clipboard-list",
+    icono: "assignment_ind",
     ruta: "",
     submodulos: [],
   },
   Usuarios: {
     nombre: "Usuarios",
-    icono: "mdi-cart",
+    icono: "group",
     ruta: "",
     submodulos: [],
   },
   Escuelas: {
     nombre: "Escuelas",
-    icono: "mdi-point-of-sale",
+    icono: "account_balance",
     ruta: "",
     submodulos: [],
   },
   Institutos: {
     nombre: "Institutos",
-    icono: "mdi-sale",
+    icono: "apartment",
     ruta: "",
     submodulos: [],
   },
   Programas: {
     nombre: "Programas",
-    icono: "mdi-file-document",
+    icono: "school",
     ruta: "",
     submodulos: [],
   },
@@ -56,32 +56,32 @@ module.exports = {
    */
   "Listado de trámites": {
     nombre: "Listado de trámites",
-    ruta: "customer-kardex",
+    ruta: "tramites",
     acciones: [],
   },
   "Listado de ventanillas": {
     nombre: "Listado de ventanillas",
-    ruta: "card-status",
+    ruta: "ventanillas",
     acciones: [],
   },
   "Listado de usuarios": {
     nombre: "Listado de usuarios",
-    ruta: "new-affiliation",
+    ruta: "usuarios",
     acciones: [],
   },
   "Listado de escuelas": {
     nombre: "Listado de escuelas",
-    ruta: "",
+    ruta: "escuelas",
     acciones: [],
   },
   "Listado de institutos": {
     nombre: "Listado de institutos",
-    ruta: "",
+    ruta: "institutos",
     acciones: [],
   },
   "Listado de programas": {
     nombre: "Listado de programas",
-    ruta: "rules-table",
+    ruta: "programas",
     acciones: [],
   },
 };
