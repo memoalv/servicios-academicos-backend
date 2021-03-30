@@ -1,0 +1,14 @@
+-Ventanillas -> La crea el admin la Ventanilla y crea un usuario de Ventanilla se le envia un correo y se le asigna una Ventanilla a ese usuario, solo uno por Ventanilla 
+
+La Ventanilla esta activo, horas de atencion
+
+Tramites: 
+Poner descripción y guardar nombre, duracion en minutos, CRUD
+
+Roles -> list
+
+CRUD de dias inhabiles, FechasInHabiles
+
+Tabla de escuela, Dias de vacaciones para Ventanilla,
+
+Ventanilla, Usuarios CRUD, Resteo de contraseña

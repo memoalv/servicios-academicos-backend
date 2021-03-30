@@ -63,4 +63,31 @@ router.get(
   institutos.listarInstitutos
 )
 
+/*************************************
+ *
+ * * Rutas referentes a Ventanillas
+ *
+ */
+const ventanillas = require("../controllers/ventanilla-controller")
+router.post(
+  "/ventanillas/crear",
+  [authMiddleware, ventanillas.validacionCrearVentanilla],
+  ventanillas.crearVentanilla
+)
+router.delete(
+  "/ventanillas/eliminar",
+  [authMiddleware, ventanillas.validacionBorrarVentanilla],
+  ventanillas.borrarVentanilla
+)
+router.patch(
+  "/ventanillas/actualizar",
+  [authMiddleware, ventanillas.validacionActualizarVentanilla],
+  ventanillas.actualizarVentanilla
+)
+router.get(
+  "/ventanillas/listar",
+  [authMiddleware, ventanillas.validacionListarVentanilla],
+  ventanillas.listarVentanilla
+)
+
 module.exports = router
