@@ -21,6 +21,10 @@ module.exports = {
         type: Sequelize.BOOLEAN,
         allowNull: false
       },
+      horarios_atencion: {
+        type: Sequelize.JSON,
+        allowNull: true
+      },
       created_at: {
         allowNull: false,
         type: Sequelize.DATE
