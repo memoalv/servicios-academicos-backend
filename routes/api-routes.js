@@ -3,8 +3,10 @@
 const express = require("express")
 const router = express.Router()
 const authMiddleware = require("../middleware/auth-middleware")
+const validateMiddleware = require("../middleware/validate-request-middleware")
 
 const usuario = require("../controllers/user-controller")
+
 router.post("/signup", usuario.validacionSignUp, usuario.signUp)
 router.post("/login", usuario.validacionLogIn, usuario.logIn)
 router.post(
@@ -71,23 +73,59 @@ router.get(
 const ventanillas = require("../controllers/ventanilla-controller")
 router.post(
   "/ventanillas/crear",
-  [authMiddleware, ventanillas.validacionCrearVentanilla],
+  [
+    authMiddleware, 
+    ventanillas.validacionListarVentanilla,
+    validateMiddleware({
+      modulo: "Ventanillas",
+      submodulo: "Listado de ventanillas",
+      accion: "C",
+    })
+  ],
   ventanillas.crearVentanilla
 )
-router.delete(
-  "/ventanillas/eliminar",
-  [authMiddleware, ventanillas.validacionBorrarVentanilla],
-  ventanillas.borrarVentanilla
-)
-router.patch(
-  "/ventanillas/actualizar",
-  [authMiddleware, ventanillas.validacionActualizarVentanilla],
-  ventanillas.actualizarVentanilla
-)
+
 router.get(
   "/ventanillas/listar",
-  [authMiddleware, ventanillas.validacionListarVentanilla],
+  [
+    authMiddleware, 
+    ventanillas.validacionListarVentanilla,
+    validateMiddleware({
+      modulo: "Ventanillas",
+      submodulo: "Listado de ventanillas",
+      accion: "R",
+    })
+  ],
   ventanillas.listarVentanilla
 )
+
+router.patch(
+  "/ventanillas/actualizar",
+  [
+    authMiddleware, 
+    ventanillas.validacionListarVentanilla,
+    validateMiddleware({
+      modulo: "Ventanillas",
+      submodulo: "Listado de ventanillas",
+      accion: "U",
+    })
+  ],
+  ventanillas.actualizarVentanilla
+)
+
+router.delete(
+  "/ventanillas/eliminar",
+  [
+    authMiddleware, 
+    ventanillas.validacionListarVentanilla,
+    validateMiddleware({
+      modulo: "Ventanillas",
+      submodulo: "Listado de ventanillas",
+      accion: "D",
+    })
+  ],
+  ventanillas.borrarVentanilla
+)
+
 
 module.exports = router
