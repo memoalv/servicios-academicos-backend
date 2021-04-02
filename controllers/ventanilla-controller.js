@@ -45,21 +45,6 @@ const validacionBorrarVentanilla = [
  * @returns {Express.Response}
  */
 const listarVentanilla = async (req, res) => {
-  const pemisosSolicitados = {
-    modulo: "Ventanillas",
-    submodulo: "Listado de ventanillas",
-    accion: "R",
-  };
-
-  if (!verificarPermisos(pemisosSolicitados, req.tokenParseado.permisos)) {
-    return res.status(401).send();
-  }
-
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-
   const pagina = req.query.pagina;
   const resultados_por_pagina = req.query.resultados_por_pagina;
   const { offset, limite } = calcularOffset(pagina, resultados_por_pagina);
@@ -100,21 +85,6 @@ const listarVentanilla = async (req, res) => {
  * @returns {Express.Response}
  */
 const crearVentanilla = async (req, res) => {
-  const pemisosSolicitados = {
-    modulo: "Ventanillas",
-    submodulo: "Listado de ventanillas",
-    accion: "C",
-  };
-
-  if (!verificarPermisos(pemisosSolicitados, req.tokenParseado.permisos)) {
-    return res.status(401).send();
-  }
-
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-
   try {
     await Ventanilla.create({
       nombre: req.body.nombre,
@@ -139,21 +109,6 @@ const crearVentanilla = async (req, res) => {
  * @returns {Express.Response}
  */
 const actualizarVentanilla = async (req, res) => {
-  const pemisosSolicitados = {
-    modulo: "Ventanillas",
-    submodulo: "Listado de ventanillas",
-    accion: "U",
-  };
-
-  if (!verificarPermisos(pemisosSolicitados, req.tokenParseado.permisos)) {
-    return res.status(401).send();
-  }
-
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-
   let existeVentanilla = false;
   try {
     existeVentanilla = await Ventanilla.findOne({
@@ -200,21 +155,6 @@ const actualizarVentanilla = async (req, res) => {
  * @returns {Express.Response}
  */
 const borrarVentanilla = async (req, res) => {
-  const pemisosSolicitados = {
-    modulo: "Ventanillas",
-    submodulo: "Listado de ventanillas",
-    accion: "D",
-  };
-
-  if (!verificarPermisos(pemisosSolicitados, req.tokenParseado.permisos)) {
-    return res.status(401).send();
-  }
-
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-
   let existeVentanilla = false;
   try {
     existeVentanilla = await Ventanilla.findOne({
