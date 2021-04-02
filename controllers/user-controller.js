@@ -9,7 +9,41 @@ const Usuario = db.Usuario;
 const Roles = db.Roles;
 const RolesUsuarios = db.RolesUsuarios;
 
+//Validaciones
+
 const validacionLogIn = [body("correo").isEmail(), body("contrasena").not().isEmpty().not().isBoolean()];
+
+const validacionPasswordReset = [body("correo").isEmail()];
+
+const validacionSignUp = [
+  body("tipo_usuario").isIn(["Incorporado", "Alumno"]),
+  body("matricula").optional().isInt(),
+  body("correo").optional().isEmail().normalizeEmail(),
+  body("nombre").not().isEmpty().trim(),
+  body("instituto").optional().not().isEmpty().trim(),
+  body("programa").optional().not().isEmpty().trim(),
+];
+
+const validacionCambiarContrasena = [
+  body("contrasena_anterior").not().isEmpty().not().isBoolean(),
+  body("contrasena_nueva").not().isEmpty().not().isBoolean(),
+  body("contrasena_confirmacion").not().isEmpty().not().isBoolean(),
+];
+
+const validacionCrearUsuario = [
+  body("contrasena_anterior").not().isEmpty().not().isBoolean(),
+  body("contrasena_nueva").not().isEmpty().not().isBoolean(),
+  body("contrasena_confirmacion").not().isEmpty().not().isBoolean(),
+];
+
+//Métodos
+
+/**
+ * Funcion para iniciar sessión en el sistema
+ * @param {Express.Request} req
+ * @param {Express.Response} res
+ * @returns {Express.Response}
+ */
 const logIn = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -51,45 +85,37 @@ const logIn = async (req, res) => {
         },
         returning: true,
       }
-      );
-      
-      if (affectedRows !== 1) {
-        return res.status(500).json();
-      }
+    );
+
+    if (affectedRows !== 1) {
+      return res.status(500).json();
     }
+  }
 
-    const { grupos, permisos } = authService.parsePermisos(usuario.roles);
-    const tokenClaims = {
-      nombre: usuario.nombre,
-      usuario: req.body.correo,
-      grupos: grupos,
-      permisos: permisos,
-    };
-    const token = jwt.sign(tokenClaims, process.env.APP_SECRET, {
-      expiresIn: "12h",
-      issuer: "servicios-academicos-backend",
-    });
-    
-    return res.status(200).json({
-      mensaje: "Correcto",
-      token: token,
-    });
+  const { grupos, permisos } = authService.parsePermisos(usuario.roles);
+  const tokenClaims = {
+    nombre: usuario.nombre,
+    usuario: req.body.correo,
+    grupos: grupos,
+    permisos: permisos,
   };
+  const token = jwt.sign(tokenClaims, process.env.APP_SECRET, {
+    expiresIn: "12h",
+    issuer: "servicios-academicos-backend",
+  });
 
+  return res.status(200).json({
+    mensaje: "Correcto",
+    token: token,
+  });
+};
 
-const validacionSignUp = [
-  body("tipo_usuario").isIn(["Incorporado", "Alumno"]),
-  body("matricula").optional().isInt(),
-  body("correo").optional().isEmail().normalizeEmail(),
-  body("nombre").not().isEmpty().trim(),
-  body("instituto").optional().not().isEmpty().trim(),
-  body("programa").optional().not().isEmpty().trim(),
-];
 /**
  * Funcion singUp. Maneja el registro de nuevos usuarios al sistema
  *
- * @param {*} req
- * @param {*} res
+ * @param {Express.Request} req
+ * @param {Express.Response} res
+ * @returns {Express.Response}
  */
 const signUp = async (req, res) => {
   const errors = validationResult(req);
@@ -217,11 +243,13 @@ const signUp = async (req, res) => {
   });
 };
 
-const validacionCambiarContrasena = [
-  body("contrasena_anterior").not().isEmpty().not().isBoolean(),
-  body("contrasena_nueva").not().isEmpty().not().isBoolean(),
-  body("contrasena_confirmacion").not().isEmpty().not().isBoolean(),
-];
+/**
+ * Método utilizado para actualizar la contraseña una vez iniciado
+ * sesión
+ * @param {Express.Request} req
+ * @param {Express.Response} res
+ * @returns {Express.Response}
+ */
 const cambiarContrasena = async (req, res) => {
   try {
     var usuario = await authService.datosAutenticacion(req.tokenParseado.usuario);
@@ -245,9 +273,7 @@ const cambiarContrasena = async (req, res) => {
   }
 
   const nuevaSal = crypto.randomBytes(32).toString("hex");
-  const nuevaContraHasheada = crypto
-    .pbkdf2Sync(req.body.contrasena_nueva, nuevaSal, 10000, 64, "sha512")
-    .toString("hex");
+  const nuevaContraHasheada = crypto.pbkdf2Sync(req.body.contrasena_nueva, nuevaSal, 10000, 64, "sha512").toString("hex");
 
   const [numberOfAffectedRows, affectedRows] = await Usuario.update(
     {
@@ -273,6 +299,26 @@ const cambiarContrasena = async (req, res) => {
   });
 };
 
+const recuperacionContrasena = async (req, res) => {
+  try {
+    usuario = await Usuario.findOne({
+      where: {
+        correo: req.body.correo,
+      },
+    });
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+/**
+ *
+ * @param {Express.Request} req
+ * @param {Express.Response} res
+ * @returns {Express.Response}
+ */
+const crearUsuario = async (req, res) => {};
+
 // TODO: reset contrasena sin token. hay que ver el flujo con el front para estar seguro de como va a quedar
 
 /**
@@ -284,12 +330,6 @@ const cambiarContrasena = async (req, res) => {
  * Ventanilla - determinar que ventanilla sera
     Admin
  */
-const validacionCrearUsuario = [
-  body("contrasena_anterior").not().isEmpty().not().isBoolean(),
-  body("contrasena_nueva").not().isEmpty().not().isBoolean(),
-  body("contrasena_confirmacion").not().isEmpty().not().isBoolean(),
-];
-
 
 module.exports = {
   validacionLogIn,
