@@ -16,7 +16,7 @@ const calcularOffset = (pagina, resultados_por_pagina) => {
 
   return {
     offset: calculo - numResultadosPP,
-    limite: calculo,
+    limite: numResultadosPP,
   };
 };
 

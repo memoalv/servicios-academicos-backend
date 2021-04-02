@@ -41,7 +41,7 @@ const crearPrograma = async (req, res) => {
 
   if (!!existePrograma) {
     return res.status(400).json({
-      mensaje: "Programa ya existe",
+      mensaje: "El programa a crear ya existe",
     });
   }
 
@@ -120,6 +120,24 @@ const actualizarPrograma = async (req, res) => {
     return res.status(400).json({ errors: errors.array() });
   }
 
+  let existePrograma = false;
+  try {
+    existePrograma = await Programa.findOne({
+      where: {
+        programa: req.body.programa,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json();
+  }
+
+  if (!!existePrograma) {
+    return res.status(400).json({
+      mensaje: "Este programa ya está registrado",
+    });
+  }
+
   try {
     var [numActualizados] = await Programa.update(
       {
@@ -162,15 +180,21 @@ const listarProgramas = async (req, res) => {
   const { offset, limite } = calcularOffset(pagina, resultados_por_pagina);
 
   try {
-    var programas = await Programa.findAll({ order: [['id', "DESC"]], offset: offset, limit: limite });
+    var programas = await Programa.findAndCountAll({ order: [['id', "DESC"]], offset: offset, limit: limite });
+    var programasTotales = programas.count;
   } catch (error) {
     console.error(error);
     return res.status(500).send();
   }
-
+  
   return res.status(200).json({
     mensaje: "Correcto",
-    datos: programas
+    datos: programas.rows,
+    paginacion: {
+      pagina: pagina,
+      total_resultados: programasTotales,
+      total_paginas: Math.ceil(programasTotales / resultados_por_pagina)
+    }
   });
 };
 
