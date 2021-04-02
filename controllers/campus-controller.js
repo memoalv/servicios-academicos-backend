@@ -159,7 +159,8 @@ const listarInstitutos = async (req, res) => {
   const { offset, limite } = calcularOffset(pagina, resultados_por_pagina);
 
   try {
-    var instituos = await Instituto.findAll({ order: [['instituto', "ASC"]], offset: offset, limit: limite });
+    var institutos = await Instituto.findAndCountAll({ order: [['instituto', "ASC"]], offset: offset, limit: limite });
+    var institutosTotales = institutos.count;
   } catch (error) {
     console.error(error);
     return res.status(500).send();
@@ -167,7 +168,12 @@ const listarInstitutos = async (req, res) => {
 
   return res.status(200).json({
     mensaje: "Correcto",
-    datos: instituos
+    datos: institutos.rows,
+    paginacion: {
+      pagina: pagina,
+      total_resultados: institutosTotales,
+      total_paginas: Math.ceil(institutosTotales / resultados_por_pagina)
+    }
   });
 };
 
