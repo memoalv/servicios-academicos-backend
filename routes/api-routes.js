@@ -5,8 +5,12 @@ const router = express.Router()
 const authMiddleware = require("../middleware/auth-middleware")
 const validateMiddleware = require("../middleware/validate-request-middleware")
 
+/*************************************
+ *
+ * * Rutas referentes a USUARIOS
+ *
+ */
 const usuario = require("../controllers/user-controller")
-
 router.post("/signup", usuario.validacionSignUp, usuario.signUp)
 router.post("/login", usuario.validacionLogIn, usuario.logIn)
 router.post(
@@ -14,6 +18,54 @@ router.post(
   [authMiddleware, usuario.validacionCambiarContrasena],
   usuario.cambiarContrasena
 )
+router.post(
+  "/usuarios/recuperar/contrasena",
+  [usuario.validacionRecuperarContrasena, validateMiddleware()],
+  usuario.recuperacionContrasena
+)
+
+router.post(
+  "/usuarios/crear",
+  [
+    authMiddleware, 
+    usuario.validacionCrearUsuario,
+    validateMiddleware({
+      modulo: "Usuarios",
+      submodulo: "Listado de usuarios",
+      accion: "C",
+    })
+  ],
+  usuario.crearUsuario
+)
+
+router.patch(
+  "/usuarios/actualizar",
+  [
+    authMiddleware, 
+    usuario.validacionActualizarUsuario,
+    validateMiddleware({
+      modulo: "Usuarios",
+      submodulo: "Listado de usuarios",
+      accion: "U",
+    })
+  ],
+  usuario.actualizarUsuario
+)
+
+router.delete(
+  "/usuarios/eliminar",
+  [
+    authMiddleware, 
+    usuario.validacionBorrarUsuario,
+    validateMiddleware({
+      modulo: "Usuarios",
+      submodulo: "Listado de usuarios",
+      accion: "D",
+    })
+  ],
+  usuario.borrarUsuario
+)
+
 
 /*************************************
  *
