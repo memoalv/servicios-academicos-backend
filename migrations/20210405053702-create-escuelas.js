@@ -1,7 +1,7 @@
 'use strict';
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    await queryInterface.createTable('UsuariosVentanillas', {
+    await queryInterface.createTable('Escuelas', {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -9,9 +9,6 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       ventanilla_id_id: {
-        type: Sequelize.INTEGER
-      },
-      usuario_id: {
         type: Sequelize.INTEGER
       },
       createdAt: {
@@ -25,6 +22,6 @@ module.exports = {
     });
   },
   down: async (queryInterface, Sequelize) => {
-    await queryInterface.dropTable('UsuariosVentanillas');
+    await queryInterface.dropTable('Escuelas');
   }
 };
