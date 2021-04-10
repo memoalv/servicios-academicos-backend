@@ -92,6 +92,29 @@ router.get("/programas/listar", [programas.validacionListarProgramas], programas
 
 /*************************************
  *
+ * * Rutas referentes a TRAMITES
+ *
+ */
+const tramites = require("../controllers/tramites-controller")
+router.post(
+  "/tramites/crear",
+  [authMiddleware, tramites.validacionCrear],
+  tramites.crear
+)
+router.delete(
+  "/tramites/eliminar",
+  [authMiddleware, tramites.validacionEliminar],
+  tramites.eliminar
+)
+router.patch(
+  "/tramites/actualizar",
+  [authMiddleware, tramites.validacionActualizar],
+  tramites.actualizar
+)
+router.get("/tramites/listar", [tramites.validacionListar], tramites.listar)
+
+/*************************************
+ *
  * * Rutas referentes a INSTITUTOS
  *
  */
