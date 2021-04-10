@@ -21,6 +21,33 @@ router.post(
   ],
   crudEscuelas.create.bind(crudEscuelas)
 );
+router.patch(
+  "/escuelas/actualizar",
+  [
+    authMiddleware,
+    [body("id").not().isEmpty().isInt(), body("escuela").not().isEmpty().trim()],
+    validReqMiddleware({
+      modulo: "Escuelas",
+      submodulo: "Listado de escuelas",
+      accion: "U",
+    }),
+  ],
+  crudEscuelas.update.bind(crudEscuelas)
+);
+router.delete(
+  "/escuelas/eliminar",
+  [
+    authMiddleware,
+    [body("id").not().isEmpty().isInt()],
+    validReqMiddleware({
+      modulo: "Escuelas",
+      submodulo: "Listado de escuelas",
+      accion: "D",
+    }),
+  ],
+  crudEscuelas.delete.bind(crudEscuelas)
+);
+
 
 const crudDiasInhabiles = new CrudController("DiasInhabiles", "dia");
 router.post(
