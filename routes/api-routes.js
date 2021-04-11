@@ -21,6 +21,20 @@ router.post(
   ],
   crudEscuelas.create.bind(crudEscuelas)
 );
+router.get(
+  "/escuelas/listar",
+  [
+    authMiddleware,
+    [
+      [
+        query("pagina").not().isEmpty().isInt(),
+        query("resultados_por_pagina").not().isEmpty().isInt(),
+        // query("escuela").trim(),
+      ],
+    ]
+  ],
+  crudEscuelas.read.bind(crudEscuelas)
+);
 router.patch(
   "/escuelas/actualizar",
   [
