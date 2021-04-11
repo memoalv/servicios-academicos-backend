@@ -79,7 +79,7 @@ router.post(
   "/dias_inhabiles/crear",
   [
     authMiddleware,
-    [body("dia").not().isEmpty().isInt(), body("activo").not().isEmpty().isInt().isIn([1])],
+    [body("dia").not().isEmpty().isInt().isIn([1,2,3,4,5,6,7])],
     validReqMiddleware(null, "Admin"),
   ],
   crudDiasInhabiles.create.bind(crudDiasInhabiles)
