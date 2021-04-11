@@ -108,6 +108,46 @@ router.delete(
   crudDiasInhabiles.delete.bind(crudDiasInhabiles)
 );
 
+/*************************************
+ *
+ * * Rutas referentes a FECHAS INHABILES
+ *  
+ *  Aqui no se actualizarán registros. Solo se listarán, crearán y borrarán.
+ */
+const crudFechasInhabiles = new CrudController("FechasInhabiles", "fecha");
+router.post(
+  "/fechas_inhabiles/crear",
+  [
+    authMiddleware,
+    [body("fecha").not().isEmpty().isDate()],
+    validReqMiddleware(null, "Admin"),
+  ],
+  crudFechasInhabiles.create.bind(crudFechasInhabiles)
+);
+router.get(
+  "/fechas_inhabiles/listar",
+  [
+    authMiddleware,
+    [
+      [
+        query("pagina").not().isEmpty().isInt(),
+        query("resultados_por_pagina").not().isEmpty().isInt()
+      ],
+    ],
+    validReqMiddleware(null, "Admin")
+  ],
+  crudFechasInhabiles.read.bind(crudFechasInhabiles)
+);
+router.delete(
+  "/fechas_inhabiles/eliminar",
+  [
+    authMiddleware,
+    [body("id").not().isEmpty().isInt()],
+    validReqMiddleware(null, "Admin")
+  ],
+  crudFechasInhabiles.delete.bind(crudFechasInhabiles)
+);
+
 
 const usuario = require("../controllers/user-controller");
 
