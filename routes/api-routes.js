@@ -7,6 +7,12 @@ const validReqMiddleware = require("../middleware/validate-request-middleware");
 const { CrudController } = require("../controllers/crud-controller");
 const { body, query } = require("express-validator");
 
+
+/*************************************
+ *
+ * * Rutas referentes a ESCUELAS
+ *
+ */
 const crudEscuelas = new CrudController("Escuela", "escuela");
 router.post(
   "/escuelas/crear",
@@ -29,7 +35,7 @@ router.get(
       [
         query("pagina").not().isEmpty().isInt(),
         query("resultados_por_pagina").not().isEmpty().isInt(),
-        // query("escuela").trim(),
+        query("escuela").trim(),
       ],
     ]
   ],
@@ -62,7 +68,12 @@ router.delete(
   crudEscuelas.delete.bind(crudEscuelas)
 );
 
-
+/*************************************
+ *
+ * * Rutas referentes a DIAS INHABILES
+ *  
+ * Aqui no se actualizarán registros. Solo se listarán, crearán y borrarán.
+ */
 const crudDiasInhabiles = new CrudController("DiasInhabiles", "dia");
 router.post(
   "/dias_inhabiles/crear",
@@ -73,6 +84,30 @@ router.post(
   ],
   crudDiasInhabiles.create.bind(crudDiasInhabiles)
 );
+router.get(
+  "/dias_inhabiles/listar",
+  [
+    authMiddleware,
+    [
+      [
+        query("pagina").not().isEmpty().isInt(),
+        query("resultados_por_pagina").not().isEmpty().isInt()
+      ],
+    ],
+    validReqMiddleware(null, "Admin")
+  ],
+  crudDiasInhabiles.read.bind(crudDiasInhabiles)
+);
+router.delete(
+  "/dias_inhabiles/eliminar",
+  [
+    authMiddleware,
+    [body("id").not().isEmpty().isInt()],
+    validReqMiddleware(null, "Admin")
+  ],
+  crudDiasInhabiles.delete.bind(crudDiasInhabiles)
+);
+
 
 const usuario = require("../controllers/user-controller");
 
