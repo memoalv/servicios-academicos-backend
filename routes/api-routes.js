@@ -210,7 +210,6 @@ router.post(
 router.get(
   "/escuelas/listar",
   [
-    authMiddleware,
     [
       [
         query("pagina").not().isEmpty().isInt(),
