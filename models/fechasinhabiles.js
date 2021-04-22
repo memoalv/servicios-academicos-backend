@@ -14,8 +14,7 @@ module.exports = (sequelize, DataTypes) => {
     }
   };
   FechasInhabiles.init({
-    fecha: DataTypes.DATE,
-    activo: DataTypes.BOOLEAN
+    fecha: DataTypes.DATE
   }, {
     sequelize,
     modelName: 'FechasInhabiles',

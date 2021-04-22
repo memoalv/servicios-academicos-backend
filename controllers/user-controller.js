@@ -1,6 +1,6 @@
 "use strict";
 const jwt = require("jsonwebtoken");
-const { validationResult, body } = require("express-validator");
+const { validationResult, body, query } = require("express-validator");
 const mailer = require("../services/mail-service");
 const authService = require("../services/auth-service");
 const crypto = require("crypto");
@@ -32,7 +32,7 @@ const validacionCambiarContrasena = [
 
 const validacionCrearUsuario = [
   body("nombre").not().isEmpty().custom((value) => {
-    return value.match(/^[A-Za-z ]+$/);
+    return value.match(/([A-Za-z ])\w+/);
   }),
   body("correo").not().isEmpty().isEmail(),
   body("tipo_usuario").not().isEmpty(),
@@ -45,14 +45,14 @@ const validacionRecuperarContrasena = [
 const validacionActualizarUsuario = [
   query("id").not().isEmpty().isInt(),
   body("nombre").not().isEmpty().custom((value) => {
-    return value.match(/^[A-Za-z ]+$/);
+    return value.match(/([A-Za-z ])\w+/);
   })
 ];
 
 const validacionBorrarUsuario = [
   query("id").not().isEmpty().isInt(),
   body("nombre").not().isEmpty().custom((value) => {
-    return value.match(/^[A-Za-z ]+$/);
+    return value.match(/([A-Za-z ])\w+/);
   })
 ];
 

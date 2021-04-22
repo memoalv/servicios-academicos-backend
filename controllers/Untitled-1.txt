@@ -12,3 +12,8 @@ CRUD de dias inhabiles, FechasInHabiles
 Tabla de escuela, Dias de vacaciones para Ventanilla,
 
 Ventanilla, Usuarios CRUD, Resteo de contraseña
+
+
+
+1 Duracion del Tramite.
+2 Traerme todas las Ventanillas y sus tramites.

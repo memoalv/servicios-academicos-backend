@@ -74,7 +74,7 @@ router.post(
 );
 router.post(
   "/usuarios/recuperar/contrasena",
-  [usuario.validacionRecuperarContrasena, validateMiddleware()],
+  [usuario.validacionRecuperarContrasena, validReqMiddleware()],
   usuario.recuperacionContrasena
 );
 
@@ -83,7 +83,7 @@ router.post(
   [
     authMiddleware, 
     usuario.validacionCrearUsuario,
-    validateMiddleware({
+    validReqMiddleware({
       modulo: "Usuarios",
       submodulo: "Listado de usuarios",
       accion: "C",
@@ -97,7 +97,7 @@ router.patch(
   [
     authMiddleware, 
     usuario.validacionActualizarUsuario,
-    validateMiddleware({
+    validReqMiddleware({
       modulo: "Usuarios",
       submodulo: "Listado de usuarios",
       accion: "U",
@@ -111,7 +111,7 @@ router.delete(
   [
     authMiddleware, 
     usuario.validacionBorrarUsuario,
-    validateMiddleware({
+    validReqMiddleware({
       modulo: "Usuarios",
       submodulo: "Listado de usuarios",
       accion: "D",
@@ -127,17 +127,48 @@ router.delete(
  *
  */
 const programas = require("../controllers/programs-controller");
-router.post("/programas/crear", [authMiddleware, programas.validacionCrearPrograma], programas.crearPrograma);
+router.post(
+  "/programas/crear", 
+  [
+    authMiddleware, 
+    programas.validacionCrearPrograma, 
+    validReqMiddleware({
+      modulo: "Programas",
+      submodulo: "Listado de programas",
+      accion: "C",
+    })
+  ],
+  programas.crearPrograma
+);
+
 router.delete(
   "/programas/eliminar",
-  [authMiddleware, programas.validacionEliminarPrograma],
+  [
+    authMiddleware, 
+    programas.validacionEliminarPrograma, 
+    validReqMiddleware({
+      modulo: "Programas",
+      submodulo: "Listado de programas",
+      accion: "D",
+    })
+  ],
   programas.eliminarPrograma
 );
+
 router.patch(
   "/programas/actualizar",
-  [authMiddleware, programas.validacionActualizarPrograma],
+  [
+    authMiddleware,
+    programas.validacionActualizarPrograma, 
+    validReqMiddleware({
+      modulo: "Programas",
+      submodulo: "Listado de programas",
+      accion: "C",
+    })
+  ],
   programas.actualizarPrograma
 );
+
 router.get("/programas/listar", [programas.validacionListarProgramas], programas.listarProgramas);
 
 /*************************************
@@ -148,20 +179,47 @@ router.get("/programas/listar", [programas.validacionListarProgramas], programas
 const tramites = require("../controllers/tramites-controller")
 router.post(
   "/tramites/crear",
-  [authMiddleware, tramites.validacionCrear],
+  [
+    authMiddleware,
+    tramites.validacionCrear, 
+    validReqMiddleware({
+    modulo: "Trámites",
+    submodulo: "Listado de trámites",
+    accion: "C",
+   })
+  ],
   tramites.crear
-)
+);
+
 router.delete(
   "/tramites/eliminar",
-  [authMiddleware, tramites.validacionEliminar],
+  [
+    authMiddleware, 
+    tramites.validacionEliminar,
+    validReqMiddleware({
+      modulo: "Trámites",
+      submodulo: "Listado de trámites",
+      accion: "D",
+    })
+  ],
   tramites.eliminar
-)
+);
+
 router.patch(
   "/tramites/actualizar",
-  [authMiddleware, tramites.validacionActualizar],
+  [
+    authMiddleware, 
+    tramites.validacionActualizar,
+    validReqMiddleware({
+      modulo: "Trámites",
+      submodulo: "Listado de trámites",
+      accion: "U",
+    })
+  ],
   tramites.actualizar
-)
-router.get("/tramites/listar", [tramites.validacionListar], tramites.listar)
+);
+
+router.get("/tramites/listar", [tramites.validacionListar, validReqMiddleware()], tramites.listar);
 
 /*************************************
  *
@@ -192,7 +250,7 @@ router.post(
   "/ventanillas/crear",
   [
     authMiddleware,
-    ventanillas.validacionListarVentanilla,
+    ventanillas.validacionCrearVentanilla,
     validReqMiddleware({
       modulo: "Ventanillas",
       submodulo: "Listado de ventanillas",
@@ -220,7 +278,7 @@ router.patch(
   "/ventanillas/actualizar",
   [
     authMiddleware,
-    ventanillas.validacionListarVentanilla,
+    ventanillas.validacionActualizarVentanilla,
     validReqMiddleware({
       modulo: "Ventanillas",
       submodulo: "Listado de ventanillas",
@@ -234,7 +292,7 @@ router.delete(
   "/ventanillas/eliminar",
   [
     authMiddleware,
-    ventanillas.validacionListarVentanilla,
+    ventanillas.validacionBorrarVentanilla,
     validReqMiddleware({
       modulo: "Ventanillas",
       submodulo: "Listado de ventanillas",
@@ -243,5 +301,15 @@ router.delete(
   ],
   ventanillas.borrarVentanilla
 );
+
+const reseravaciones = require('../controllers/reservaciones-controller');
+router.get(
+  "/reservaciones/listar",
+  [
+    authMiddleware,
+    reseravaciones.listar,
+    validReqMiddleware(),
+  ],
+)
 
 module.exports = router;

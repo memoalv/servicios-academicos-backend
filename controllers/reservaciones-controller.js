@@ -1,10 +1,10 @@
 //Imports
-const { calcularOffset } = require("../services/pagination-service");
 const { body, query } = require("express-validator");
 const { Op } = require("sequelize");
 const db = require("../models");
-const model = db.Tramite;
-const rolesTramites = db.RolesTramites;
+const { ActiveReservations } = require('../helpers/ActiveReservations');
+const model = db.Reservacion;
+const tramites = db.Tramite;
 
 //Validaciones
 
@@ -13,33 +13,14 @@ const rolesTramites = db.RolesTramites;
  */
 
 const validacionListar = [
-  query("pagina").not().isEmpty().isInt(),
-  query("soloActivas").optional().isBoolean(),
-  query("nombre").optional().custom((value) => {
-    return value.match(/([A-Za-z ])\w+/);
-  }),
-  query("resultados_por_pagina").not().isEmpty().isInt(),
+  query("fechaInicio").notEmpty().isISO8601(),
+  query("fechaFin").notEmpty().isISO8601(),
+  query("tramiteId").notEmpty().isInt()
 ];
 
 const validacionCrear = [
-  body("nombre").not().isEmpty().trim().custom((value) => {
-    return value.match(/([A-Za-z ])\w+/);
-  }),
-  body("duracion").not().isEmpty().isInt(),
-  body("activo").not().isEmpty().isBoolean(),
-  body("roles").exists().withMessage('missing array of roles'),
-  body("roles.*").not().isEmpty().isInt(),
-];
-
-const validacionActualizar = [
-  query("id").not().isEmpty().isInt(),
-  body("nombre").not().isEmpty().trim().custom((value) => {
-    return value.match(/([A-Za-z ])\w+/);
-  }),
-  body("duracion").not().isEmpty().isInt(),
-  body("activo").not().isEmpty().isBoolean(),
-  body("roles").exists().withMessage('missing array of roles'),
-  body("roles.*").not().isEmpty().isInt(),
+    body("fecha").notEmpty().isISO8601(),
+    body("tramiteId").notEmpty().isInt()
 ];
 
 const validacionEliminar = [
@@ -57,35 +38,30 @@ const validacionEliminar = [
  * @returns {Express.Response}
  */
 const listar = async (req, res) => {
-  const pagina = req.query.pagina;
-  const resultados_por_pagina = req.query.resultados_por_pagina;
-  const { offset, limite } = calcularOffset(pagina, resultados_por_pagina);
-  const query = {
-    where: {},
-    order: [["id", "ASC"]],
-    offset: offset,
-    limit: limite,
-  };
-  try {
-    if (req.query.soloActivas) {
-      query.where.activo = true
+    try{
+        tramite = await tramites.findOne({
+            where: {
+                id: req.query.tramiteId,
+                activo: true
+            },
+        })
+    }catch(error){
+        console.log(error);
+        return res.status(422).json({mensaje: "tramite no existente"});
     }
 
-    if (req.query.nombre) {
-      query.where.nombre = { 
-        [Op.like] : '%'+req.query.nombre+'%'
-      }
+    try {
+        instancia = new ActiveReservations(tramite.duracion, req.query.fechaInicio, req.query.fechaFin);
+        datos = await instancia.availableDates();
+    } catch (error) {
+        console.error(error);
+        return res.status(500).send();
     }
-
-    datos = await model.findAll(query);
+    
     return res.status(200).json({
-      mensaje: "Correcto",
-      datos: datos,
+       mensaje : "correcto",
+       datos : datos
     });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).send();
-  }
 };
 
 /**
@@ -269,8 +245,8 @@ module.exports = {
   crear,
   validacionListar,
   listar,
-  validacionActualizar,
-  actualizar,
-  validacionEliminar,
-  eliminar
+//   validacionActualizar,
+//   actualizar,
+//   validacionEliminar,
+//   eliminar
 };

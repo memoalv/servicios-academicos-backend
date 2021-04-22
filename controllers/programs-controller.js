@@ -1,5 +1,4 @@
-const { validationResult, body, query } = require("express-validator");
-const { verificarPermisos } = require("../services/auth-service");
+const { body, query } = require("express-validator");
 const { calcularOffset } = require("../services/pagination-service");
 const db = require("../models");
 const Programa = db.Programa;
@@ -9,24 +8,6 @@ const Programa = db.Programa;
 
 const validacionCrearPrograma = [body("programa").not().isEmpty().trim()];
 const crearPrograma = async (req, res) => {
-  if (
-    !verificarPermisos(
-      {
-        modulo: "Programas",
-        submodulo: "Listado de programas",
-        accion: "C",
-      },
-      req.tokenParseado.permisos
-    )
-  ) {
-    return res.status(401).send();
-  }
-
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-
   let existePrograma = false;
   try {
     existePrograma = await Programa.findOne({
@@ -59,24 +40,6 @@ const crearPrograma = async (req, res) => {
 
 const validacionEliminarPrograma = [body("programa_id").not().isEmpty().isInt()];
 const eliminarPrograma = async (req, res) => {
-  if (
-    !verificarPermisos(
-      {
-        modulo: "Programas",
-        submodulo: "Listado de programas",
-        accion: "D",
-      },
-      req.tokenParseado.permisos
-    )
-  ) {
-    return res.status(401).send();
-  }
-
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-
   try {
     var numBorrados = await Programa.destroy({
       where: {
@@ -102,24 +65,6 @@ const validacionActualizarPrograma = [
   body("programa").not().isEmpty().trim(),
 ];
 const actualizarPrograma = async (req, res) => {
-  if (
-    !verificarPermisos(
-      {
-        modulo: "Programas",
-        submodulo: "Listado de programas",
-        accion: "U",
-      },
-      req.tokenParseado.permisos
-    )
-  ) {
-    return res.status(401).send();
-  }
-
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-
   let existePrograma = false;
   try {
     existePrograma = await Programa.findOne({
@@ -170,11 +115,6 @@ const validacionListarProgramas = [
 
 // ruta no protegida pq se utiliza para el select en el signup
 const listarProgramas = async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-
   const pagina = req.query.pagina;
   const resultados_por_pagina = req.query.resultados_por_pagina;
   const { offset, limite } = calcularOffset(pagina, resultados_por_pagina);

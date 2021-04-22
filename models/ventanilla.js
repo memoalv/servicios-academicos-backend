@@ -23,8 +23,7 @@ module.exports = (sequelize, DataTypes) => {
   Ventanilla.init({
     nombre: DataTypes.STRING,
     horas_atencion: DataTypes.INTEGER,
-    activo: DataTypes.BOOLEAN,
-    horarios_atencion: DataTypes.JSON                        
+    activo: DataTypes.BOOLEAN,                       
   }, {
     sequelize,
     modelName: 'Ventanilla',
