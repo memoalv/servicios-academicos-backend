@@ -15,7 +15,6 @@ module.exports = (sequelize, DataTypes) => {
   };
   DiasInhabiles.init({
     dia: DataTypes.NUMBER,
-    activo: DataTypes.BOOLEAN
   }, {
     sequelize,
     modelName: 'DiasInhabiles',

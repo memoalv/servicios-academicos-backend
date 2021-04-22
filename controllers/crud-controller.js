@@ -1,5 +1,6 @@
 const db = require("../models");
-const { validationResult, body, query } = require("express-validator");
+const { Op } = require("sequelize");
+const { calcularOffset } = require("../services/pagination-service");
 
 class CrudController {
   constructor(model_name, main_field) {
@@ -9,7 +10,7 @@ class CrudController {
     this.init();
   }
 
-  async init() {
+  init() {
     this.table_fields = {};
 
     this.model
@@ -31,17 +32,14 @@ class CrudController {
       });
   }
 
-  
-
-
   /**
-   * Creación de nuevos registros. 
-   * 
+   * Creación de nuevos registros.
+   *
    * Los campos del JSON tienen que llamarse igual que las columnas de la tabla
    * para que funcione la inserción. Además, hay que definir un campo 'base'
-   * al momento de instanciar la clase para hacer la validación de que no se 
+   * al momento de instanciar la clase para hacer la validación de que no se
    * están creando registros duplicados.
-   * 
+   *
    */
   async create(req, res) {
     if (this.constructorError) {
@@ -67,9 +65,9 @@ class CrudController {
       });
     }
 
-    query_clause = {}
+    query_clause = {};
     for (const field in this.table_fields) {
-      query_clause[field] = req.body[field]
+      query_clause[field] = req.body[field];
     }
 
     try {
@@ -85,8 +83,49 @@ class CrudController {
   }
 
   /**
+   * Listado de registros
+   * 
+   * Se puede filtrar por el campo principal que se definió a la hora
+   * de instanciar la clase. También se pagina.
+   */
+  async read(req, res) {
+    const pagina = parseInt(req.query.pagina);
+    const resultados_por_pagina = req.query.resultados_por_pagina;
+    const { offset, limite } = calcularOffset(pagina, resultados_por_pagina);
+
+    let where_clause = {};
+    console.log(req.query);
+    if (req.query[this.main_field]) {
+      where_clause[this.main_field] = { [Op.like]: `%${req.query[this.main_field]}%` };
+    }
+
+    try {
+      var rows = await this.model.findAndCountAll({
+        order: [["id", "ASC"]],
+        where: where_clause,
+        offset: offset,
+        limit: limite,
+      });
+      var totalRows = rows.count;
+    } catch (error) {
+      console.error(error);
+      return res.status(500).send();
+    }
+
+    return res.status(200).json({
+      mensaje: "Correcto",
+      datos: rows.rows,
+      paginacion: {
+        pagina: pagina,
+        total_resultados: totalRows,
+        total_paginas: Math.ceil(totalRows / resultados_por_pagina),
+      },
+    });
+  }
+
+  /**
    * Actualización de campos
-   *  
+   *
    * Los campos del JSON tiene que contener el campo 'id' para identificar
    * el registro a actualizar. Los demás campos serán las demás columnas de
    * la tabla.
@@ -97,36 +136,33 @@ class CrudController {
       return res.status(500).send();
     }
 
-    let update_clause = {}
+    let update_clause = {};
     for (const field in this.table_fields) {
-      update_clause[field] = req.body[field]
+      update_clause[field] = req.body[field];
     }
 
     let where_clause = {
-      id: req.body.id
-    }
+      id: req.body.id,
+    };
 
     if (Object.keys(where_clause).length === 0) {
       console.error(`Clausula where en update vacía. ${this.model}`);
       return res.status(500).send();
     }
-    
+
     try {
-      var [numActualizados] = await this.model.update(
-        update_clause,
-        {
-          where: where_clause,
-        }
-      );
+      var [numActualizados] = await this.model.update(update_clause, {
+        where: where_clause,
+      });
     } catch (error) {
       console.error(error);
       return res.status(500).json();
     }
-  
+
     if (numActualizados < 1) {
       return res.status(400).json({ mensaje: "El registro a actualizar no existe" });
     }
-  
+
     return res.status(200).json({
       mensaje: "Registro actualizado correctamente",
     });
@@ -134,14 +170,13 @@ class CrudController {
 
   /**
    * Borrado de registros
-   * 
+   *
    * Solo se utiliza el campo 'id' en el JSON del request para identificar
    * el registro a eliminar.
    */
   async delete(req, res) {
-
     let where_clause = {
-      id: req.body.id
+      id: req.body.id,
     };
 
     if (Object.keys(where_clause).length === 0) {
@@ -157,20 +192,17 @@ class CrudController {
       console.error(error);
       return res.status(500).json();
     }
-  
+
     if (numBorrados < 1) {
       return res.status(400).json({ mensaje: "El registro a borrar no existe" });
     }
-  
+
     return res.status(200).json({
       mensaje: "Registro eliminado correctamente",
     });
   }
 }
 
-
-
 module.exports = {
   CrudController,
 };
-
