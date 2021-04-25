@@ -1,6 +1,6 @@
 "use strict";
 const jwt = require("jsonwebtoken");
-const { validationResult, body } = require("express-validator");
+const { validationResult, body, query } = require("express-validator");
 const mailer = require("../services/mail-service");
 const authService = require("../services/auth-service");
 const crypto = require("crypto");
@@ -31,9 +31,29 @@ const validacionCambiarContrasena = [
 ];
 
 const validacionCrearUsuario = [
-  body("contrasena_anterior").not().isEmpty().not().isBoolean(),
-  body("contrasena_nueva").not().isEmpty().not().isBoolean(),
-  body("contrasena_confirmacion").not().isEmpty().not().isBoolean(),
+  body("nombre").not().isEmpty().custom((value) => {
+    return value.match(/([A-Za-z ])\w+/);
+  }),
+  body("correo").not().isEmpty().isEmail(),
+  body("tipo_usuario").not().isEmpty(),
+];
+
+const validacionRecuperarContrasena = [
+  body("correo").not().isEmpty().isEmail(),
+];
+
+const validacionActualizarUsuario = [
+  query("id").not().isEmpty().isInt(),
+  body("nombre").not().isEmpty().custom((value) => {
+    return value.match(/([A-Za-z ])\w+/);
+  })
+];
+
+const validacionBorrarUsuario = [
+  query("id").not().isEmpty().isInt(),
+  body("nombre").not().isEmpty().custom((value) => {
+    return value.match(/([A-Za-z ])\w+/);
+  })
 ];
 
 //Métodos
@@ -95,6 +115,7 @@ const logIn = async (req, res) => {
   const { grupos, permisos } = authService.parsePermisos(usuario.roles);
   const tokenClaims = {
     nombre: usuario.nombre,
+    usuario_id: usuario.id,
     usuario: req.body.correo,
     grupos: grupos,
     permisos: permisos,
@@ -299,6 +320,12 @@ const cambiarContrasena = async (req, res) => {
   });
 };
 
+/**
+ * Crea una nueva contraseña para el usuario
+ * @param {Express.Request} req
+ * @param {Express.Response} res
+ * @returns {Express.Response}
+ */
 const recuperacionContrasena = async (req, res) => {
   try {
     usuario = await Usuario.findOne({
@@ -308,18 +335,245 @@ const recuperacionContrasena = async (req, res) => {
     });
   } catch (error) {
     console.log(error);
+    return res.status(500).json({
+      mensaje: "Ocurrió un error al consultar el usuario",
+    });
+  }
+
+  if (!usuario) {
+    return res.status(500).json({
+      mensaje: "Usuario inexistente, favor de verifcar",
+    });
+  }
+  const { contrasena, sal, contrasenaHasheada } = authService.generarPassword();
+  
+  try {
+    const [numberOfAffectedRows, affectedRows] = await Usuario.update(
+      {
+        contrasena: contrasenaHasheada,
+        sal: sal,
+      },
+      {
+        where: {
+          correo: req.body.correoo,
+        },
+        returning: true,
+      }
+    );
+    
+    if (affectedRows !== 1) {
+      return res.status(500).json({
+        mensaje: "Ocurrió un error al actualizar la contraseña",
+      });
+    }
+
+    await mailer.sendMail({
+      to: usuario.correo,
+      from: "noreplygreenhouse@gmail.com",
+      subject: "Recuperación de la contraseña",
+      html: `<h1>Hola ${usuario.nombre}, ¡se ha cambiado tu contraseña correctamente!</h1><p>Tu contraseña es: ${contrasena}</p><p>Te recomendamos cambiarla inmediatamente por una propia.</p>`,
+    });
+    
+    return res.status(200).json({
+      mensaje: "Se ha enviado un correo con la información para verificar",
+    });
+
+    
+  } catch (error) {
+    console.error(error);
+    throw new Error("correo");
   }
 };
 
 /**
+ * Edita el nombre del usuario
+ * @param {Express.Request} req
+ * @param {Express.Response} res
+ * @returns {Express.Response}
+ */
+ const actualizarUsuario = async (req, res) => {
+  try {
+    usuario = await Usuario.findOne({
+      where: {
+        id: req.query.id,
+      },
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      mensaje: "Ocurrió un error al consultar el usuario",
+    });
+  }
+
+  if (!usuario) {
+    return res.status(500).json({
+      mensaje: "Usuario inexistente, favor de verifcar",
+    });
+  }
+
+  
+  try {
+    const [numberOfAffectedRows, affectedRows] = await Usuario.update(
+      {
+        nombre: req.body.nombre
+      },
+      {
+        where: {
+          id: req.body.id,
+        },
+        returning: true,
+      }
+    );
+    
+    if (affectedRows !== 1) {
+      return res.status(500).json({
+        mensaje: "Ocurrió un error al actualizar la información",
+      });
+    }
+    
+    return res.status(200).json({
+      mensaje: "Información actualizado correctamente",
+    });
+
+    
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      mensaje: "Ocurrió un error al actualizar la información",
+    });
+  }
+};
+
+/**
+ * Crea un usuario administrativo
+ * @param {Express.Request} req
+ * @param {Express.Response} res
+ * @returns {Express.Response}
+ */
+const crearUsuario = async (req, res) => {
+  const { contrasena, sal, contrasenaHasheada } = authService.generarPassword();
+  const nuevoUsuario = {
+    nombre: req.body.nombre,
+    correo: req.body.correo,
+    contrasena: contrasenaHasheada,
+    sal: sal,
+  };
+  
+  clausulaWhere = {};
+  if (req.body.tipo_usuario == "Admin") {
+    clausulaWhere.rol = "Admin";
+  } else {
+    clausulaWhere.rol = "Ventanilla";
+  }
+
+  // asignacion de rol al usuario
+  let rolUsuario = null;
+  try {
+    rolUsuario = await Roles.findOne({
+      attributes: ["id"],
+      where: clausulaWhere,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json();
+  }
+
+  // * Si falla el correo no se creara el usuario
+  const t = await db.sequelize.transaction();
+  try {
+    // guardado de usuario
+    const usuarioGuardado = await Usuario.create(
+      nuevoUsuario, 
+      {
+        transaction: t,
+      }
+    );
+
+    // asignacion de rol
+    await RolesUsuarios.create(
+      {
+        rol_id: rolUsuario.id,
+        usuario_id: usuarioGuardado.id,
+      },
+      {
+        transaction: t,
+      }
+    );
+
+    // envio de correo con contraseña temporal
+    try {
+      await mailer.sendMail({
+        to: req.body.correo,
+        from: "noreplygreenhouse@gmail.com",
+        subject: "Se te ha creado tu ustu correctamente",
+        html: `<h1>Hola ${nuevoUsuario.nombre}, ¡te registraste correctamente!</h1><p>Tu contraseña es: ${contrasena}</p><p>Te recomendamos cambiarla inmediatamente por una propia.</p>`,
+      });
+    } catch (error) {
+      console.error(error);
+      throw new Error("correo");
+    }
+
+    await t.commit();
+  } catch (error) {
+    await t.rollback();
+    if (error.message == "correo") {
+      return res.status(500).json({
+        mensaje: "Ocurrió un error al enviar el correo",
+        msj: "correo",
+      });
+    }
+
+    console.error(error);
+    return res.status(500).json();
+  }
+
+  return res.status(200).json({
+    mensaje: "Usuario creado correctamente",
+  });
+};
+
+/**
+ * Método para la actualización de una Ventanilla
  *
  * @param {Express.Request} req
  * @param {Express.Response} res
  * @returns {Express.Response}
  */
-const crearUsuario = async (req, res) => {};
+ const borrarUsuario = async (req, res) => {
+  let existeUsuario = false;
+  try {
+    existeUsuario = await Usuario.findOne({
+      where: {
+        id: req.query.id,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json();
+  }
 
-// TODO: reset contrasena sin token. hay que ver el flujo con el front para estar seguro de como va a quedar
+  if (!existeUsuario) {
+    return res.status(400).json({
+      mensaje: "La ventanilla no existe",
+    });
+  }
+
+  try {
+    await Usuario.destroy({
+      where: {
+        id: req.query.id
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).send();
+  }
+
+  return res.status(200).json({
+    mensaje: "El usuario se ha borrado correctamente",
+  });
+};
+
 
 /**
  * tipos de usuarios:
@@ -338,4 +592,12 @@ module.exports = {
   signUp,
   validacionCambiarContrasena,
   cambiarContrasena,
+  validacionRecuperarContrasena,
+  recuperacionContrasena,
+  validacionActualizarUsuario,
+  actualizarUsuario,
+  validacionCrearUsuario,
+  crearUsuario,
+  validacionBorrarUsuario,
+  borrarUsuario
 };

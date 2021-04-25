@@ -18,15 +18,19 @@ const validacionListarVentanilla = [
 ];
 
 const validacionCrearVentanilla = [
-  body("nombre").not().isEmpty().trim().isAlphanumeric(),
-  body("horarios_atencion").not().isEmpty().isInt(),
+  body("nombre").not().isEmpty().trim().custom((value) => {
+    return value.match(/([A-Za-z ])\w+/);
+  }),
+  body("horas_atencion").not().isEmpty().isInt(),
   body("activo").not().isEmpty().isBoolean(),
 ];
 
 const validacionActualizarVentanilla = [
   query("id").not().isEmpty().isInt(),
-  body("nombre").not().isEmpty().trim().isAlphanumeric(),
-  body("horarios_atencion").not().isEmpty().isInt(),
+  body("nombre").not().isEmpty().trim().custom((value) => {
+    return value.match(/([A-Za-z ])\w+/);
+  }),
+  body("horas_atencion").not().isEmpty().isInt(),
   body("activo").not().isEmpty().isBoolean(),
 ];
 
@@ -86,11 +90,12 @@ const listarVentanilla = async (req, res) => {
  */
 const crearVentanilla = async (req, res) => {
   try {
-    await Ventanilla.create({
+    data = {
       nombre: req.body.nombre,
-      horarios_atencion: req.body.horarios_atencion,
+      horas_atencion: req.body.horas_atencion,
       activo: req.body.activo,
-    });
+    };
+    await Ventanilla.create(data);
   } catch (error) {
     console.error(error);
     return res.status(500).send();
@@ -120,7 +125,7 @@ const actualizarVentanilla = async (req, res) => {
     console.error(error);
     return res.status(500).json();
   }
-
+  console.log("entra");
   if (!existeVentanilla) {
     return res.status(400).json({
       mensaje: "La ventanilla ya existe",
@@ -130,7 +135,7 @@ const actualizarVentanilla = async (req, res) => {
   try {
     await Ventanilla.update({
       nombre: req.body.nombre,
-      horarios_atencion: req.body.horarios_atencion,
+      horas_atencion: req.body.horas_atencion,
       activo: req.body.activo,
     },{
       where: {
@@ -166,7 +171,7 @@ const borrarVentanilla = async (req, res) => {
     console.error(error);
     return res.status(500).json();
   }
-
+  console.log("entra");
   if (!existeVentanilla) {
     return res.status(400).json({
       mensaje: "La ventanilla no existe",

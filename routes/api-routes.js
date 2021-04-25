@@ -77,6 +77,54 @@ router.delete(
   ],
   ventanillas.borrarVentanilla
 );
+router.post(
+  "/usuarios/recuperar/contrasena",
+  [usuario.validacionRecuperarContrasena, validReqMiddleware()],
+  usuario.recuperacionContrasena
+);
+
+router.post(
+  "/usuarios/crear",
+  [
+    authMiddleware, 
+    usuario.validacionCrearUsuario,
+    validReqMiddleware({
+      modulo: "Usuarios",
+      submodulo: "Listado de usuarios",
+      accion: "C",
+    })
+  ],
+  usuario.crearUsuario
+);
+
+router.patch(
+  "/usuarios/actualizar",
+  [
+    authMiddleware, 
+    usuario.validacionActualizarUsuario,
+    validReqMiddleware({
+      modulo: "Usuarios",
+      submodulo: "Listado de usuarios",
+      accion: "U",
+    })
+  ],
+  usuario.actualizarUsuario
+);
+
+router.delete(
+  "/usuarios/eliminar",
+  [
+    authMiddleware, 
+    usuario.validacionBorrarUsuario,
+    validReqMiddleware({
+      modulo: "Usuarios",
+      submodulo: "Listado de usuarios",
+      accion: "D",
+    })
+  ],
+  usuario.borrarUsuario
+);
+
 
 /*************************************
  *
@@ -119,6 +167,7 @@ router.delete(
   ],
   crudProgramas.delete.bind(crudProgramas)
 );
+
 router.patch(
   "/programas/actualizar",
   [
@@ -132,6 +181,56 @@ router.patch(
   ],
   crudProgramas.update.bind(crudProgramas)
 );
+
+/*************************************
+ *
+ * * Rutas referentes a TRAMITES
+ *
+ */
+const tramites = require("../controllers/tramites-controller")
+router.post(
+  "/tramites/crear",
+  [
+    authMiddleware,
+    tramites.validacionCrear, 
+    validReqMiddleware({
+    modulo: "Trámites",
+    submodulo: "Listado de trámites",
+    accion: "C",
+   })
+  ],
+  tramites.crear
+);
+
+router.delete(
+  "/tramites/eliminar",
+  [
+    authMiddleware, 
+    tramites.validacionEliminar,
+    validReqMiddleware({
+      modulo: "Trámites",
+      submodulo: "Listado de trámites",
+      accion: "D",
+    })
+  ],
+  tramites.eliminar
+);
+
+router.patch(
+  "/tramites/actualizar",
+  [
+    authMiddleware, 
+    tramites.validacionActualizar,
+    validReqMiddleware({
+      modulo: "Trámites",
+      submodulo: "Listado de trámites",
+      accion: "U",
+    })
+  ],
+  tramites.actualizar
+);
+
+router.get("/tramites/listar", [tramites.validacionListar, validReqMiddleware()], tramites.listar);
 
 /*************************************
  *
@@ -198,7 +297,7 @@ router.post(
   "/escuelas/crear",
   [
     authMiddleware,
-    [body("escuela").isAlphanumeric().not().isEmpty().trim()],
+    ventanillas.validacionCrearVentanilla,
     validReqMiddleware({
       modulo: "Escuelas",
       submodulo: "Listado de escuelas",
@@ -224,7 +323,7 @@ router.patch(
   "/escuelas/actualizar",
   [
     authMiddleware,
-    [body("id").not().isEmpty().isInt(), body("escuela").not().isEmpty().trim()],
+    ventanillas.validacionActualizarVentanilla,
     validReqMiddleware({
       modulo: "Escuelas",
       submodulo: "Listado de escuelas",
@@ -237,7 +336,7 @@ router.delete(
   "/escuelas/eliminar",
   [
     authMiddleware,
-    [body("id").not().isEmpty().isInt()],
+    ventanillas.validacionBorrarVentanilla,
     validReqMiddleware({
       modulo: "Escuelas",
       submodulo: "Listado de escuelas",
@@ -303,6 +402,47 @@ router.delete(
   "/fechas_inhabiles/eliminar",
   [authMiddleware, [body("id").not().isEmpty().isInt()], validReqMiddleware(null, "Admin")],
   crudFechasInhabiles.delete.bind(crudFechasInhabiles)
+);
+
+const reseravaciones = require('../controllers/reservaciones-controller');
+router.get(
+  "/reservaciones/listar",
+  [
+    authMiddleware,
+    reseravaciones.validacionListar,
+    validReqMiddleware(),
+  ],
+  reseravaciones.listar,
+);
+
+router.post(
+  "/reservaciones/crear",
+  [
+    authMiddleware,
+    reseravaciones.validacionCrear,
+    validReqMiddleware(),
+  ],
+  reseravaciones.crear,
+);
+
+router.patch(
+  "/reservaciones/actualizar",
+  [
+    authMiddleware,
+    reseravaciones.validacionActualizar,
+    validReqMiddleware(),
+  ],
+  reseravaciones.actualizar,
+);
+
+router.delete(
+  "/reservaciones/eliminar",
+  [
+    authMiddleware,
+    reseravaciones.validacionEliminar,
+    validReqMiddleware(),
+  ],
+  reseravaciones.eliminar,
 );
 
 module.exports = router;
