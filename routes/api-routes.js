@@ -409,9 +409,40 @@ router.get(
   "/reservaciones/listar",
   [
     authMiddleware,
-    reseravaciones.listar,
+    reseravaciones.validacionListar,
     validReqMiddleware(),
   ],
-)
+  reseravaciones.listar,
+);
+
+router.post(
+  "/reservaciones/crear",
+  [
+    authMiddleware,
+    reseravaciones.validacionCrear,
+    validReqMiddleware(),
+  ],
+  reseravaciones.crear,
+);
+
+router.patch(
+  "/reservaciones/actualizar",
+  [
+    authMiddleware,
+    reseravaciones.validacionActualizar,
+    validReqMiddleware(),
+  ],
+  reseravaciones.actualizar,
+);
+
+router.delete(
+  "/reservaciones/eliminar",
+  [
+    authMiddleware,
+    reseravaciones.validacionEliminar,
+    validReqMiddleware(),
+  ],
+  reseravaciones.eliminar,
+);
 
 module.exports = router;

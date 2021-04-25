@@ -115,6 +115,7 @@ const logIn = async (req, res) => {
   const { grupos, permisos } = authService.parsePermisos(usuario.roles);
   const tokenClaims = {
     nombre: usuario.nombre,
+    usuario_id: usuario.id,
     usuario: req.body.correo,
     grupos: grupos,
     permisos: permisos,

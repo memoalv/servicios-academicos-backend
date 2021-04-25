@@ -1,9 +1,11 @@
 //Imports
 const { body, query } = require("express-validator");
-const { Op } = require("sequelize");
+const { Op, where } = require("sequelize");
 const db = require("../models");
 const { ActiveReservations } = require('../helpers/ActiveReservations');
+const { DateTime } = require("luxon");
 const model = db.Reservacion;
+const Usuario = db.Usuario;
 const tramites = db.Tramite;
 
 //Validaciones
@@ -19,8 +21,16 @@ const validacionListar = [
 ];
 
 const validacionCrear = [
-    body("fecha").notEmpty().isISO8601(),
+    body("fechaInicio").notEmpty().isISO8601(),
+    body("usuarioId").optional().isInt(),
     body("tramiteId").notEmpty().isInt()
+];
+
+const validacionActualizar = [
+    body("fechaInicio").notEmpty().isISO8601(),
+    body("usuarioId").optional().isInt(),
+    body("tramiteId").notEmpty().isInt(),
+    query("id").not().isEmpty().isInt()
 ];
 
 const validacionEliminar = [
@@ -47,12 +57,12 @@ const listar = async (req, res) => {
         })
     }catch(error){
         console.log(error);
-        return res.status(422).json({mensaje: "tramite no existente"});
+        return res.status(400).json({mensaje: "tramite no existente"});
     }
 
     try {
-        instancia = new ActiveReservations(tramite.duracion, req.query.fechaInicio, req.query.fechaFin);
-        datos = await instancia.availableDates();
+        let instancia = new ActiveReservations(tramite.duracion, req.query.fechaInicio, req.query.fechaFin);
+        var datos = await instancia.availableDates();
     } catch (error) {
         console.error(error);
         return res.status(500).send();
@@ -72,35 +82,60 @@ const listar = async (req, res) => {
  * @returns {Express.Response}
  */
 const crear = async (req, res) => {
-  const t = await db.sequelize.transaction();
+  try{
+    var tramite = await tramites.findOne({
+      where: {
+        id: req.body.tramiteId,
+        activo: true
+      },
+    })
+  }catch(error){
+    console.log(error);
+    return res.status(400).json({mensaje: "tramite no existente"});
+  }
+
   try {
-    const tramite = await model.create({
-      nombre: req.body.nombre,
-      duracion: req.body.duracion,
-      activo: req.body.activo,
-    },{
-      transaction: t,
+    let fechaInicio = DateTime.fromISO(req.body.fechaInicio, {zone: "America/Denver"}).setZone("UTC");
+    let instancia = new ActiveReservations(tramite.duracion, req.body.fechaInicio, req.body.fechaInicio);
+    let fechaFin = DateTime.fromISO(req.body.fechaInicio, {zone: "America/Denver"}).plus({minutes: tramite.duracion}).setZone("UTC");
+    var ventanillaId = await instancia.validateReservationDate(fechaInicio, fechaFin); 
+
+    if (ventanillaId == -1) {
+      return res.status(400).json({
+        mensaje: "La fecha selecciona no disponible para este tramite"
+      })
+    }
+
+    const usuario = await Usuario.findOne({
+      where: {
+        correo: req.tokenParseado.usuario
+      }
     });
 
-    rowsToInsert = [];
-    req.body.roles.forEach(rol_id => {
-      rowsToInsert.push({
-        rol_id: rol_id,
-        tramite_id: tramite.id 
-      });
+    let usuarioId = usuario.id;
+    if (req.body.usuarioId) {
+      if (req.tokenParseado.grupos.includes("Admin")) {
+        usuarioId = req.body.usuarioId;
+      }else{
+        return res.status(403).json({mensaje: "No tiene permiso de ejecutar este request"})
+      }
+    }
+
+    const reservacion = await model.create({
+      usuario_id: usuarioId,
+      ventanilla_id: ventanillaId,
+      tramite_id: tramite.id,
+      fecha_inicio: fechaInicio.setZone("UTC").toSQL(),
+      fecha_fin: fechaFin.setZone("UTC").toSQL(),
     });
-    roles = await rolesTramites.bulkCreate(rowsToInsert, {
-      transaction: t,
-    });
-    await t.commit();
+
   } catch (error) {
-    await t.rollback();
     console.error(error);
     return res.status(500).send();
   }
 
   return res.status(200).json({
-    mensaje: "El tramite se ha creado correctamente",
+    mensaje: "La reservacion se ha creado correctamente",
   });
 };
 
@@ -120,78 +155,71 @@ const actualizar = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    return res.status(400).json({mensaje: "Usuario inexistente, favor de verifcar"});
+    return res.status(400).json({mensaje: "Reservacion inexistente, favor de verifcar"});
   }
 
-  const t = await db.sequelize.transaction();
-  try {
-    roles = await rolesTramites.findAll({
+  try{
+    var tramite = await tramites.findOne({
       where: {
-        "tramite_id": req.query.id
+        id: req.query.tramiteId,
+        activo: true
       },
-      attributes: ["rol_id"]
-    }, {
-      transaction: t
-    });
-    rolesIds = [];
+    })
+  }catch(error){
+    console.log(error);
+    return res.status(400).json({mensaje: "tramite no existente"});
+  }
 
-    roles.forEach(role => {
-      rolesIds.push(role.rol_id);
-    });
-    
-    if (rolesIds.length != req.body.roles.length) {
-      toInsert = rolesIds.filter(x => !req.body.roles.includes(x));
-      toRemove = req.body.roles.filter(x => !rolesIds.includes(x));
-  
-      if (toRemove.length != 0) {
-        await rolesTramites.destroy({
-          where: {
-            tramite_id: req.query.id,
-            rol_id: {
-              [Op.in]: toRemove
-            }
-          }
-        }, {
-          transaction: t
-        });
-      }
-    
-      rowsToInsert = []
-      req.body.roles.forEach(rolId => {
-        rowsToInsert.push({
-          rol_id: rolId,
-          tramite_id: req.query.id
-        })
-      });
-  
-      roles = await rolesTramites.bulkCreate(rowsToInsert, {
-        transaction: t,
-      });
+  try {
+    let fechaInicio = DateTime.fromISO(req.body.fechaInicio, {zone: "America/Denver"}).setZone("UTC");
+    let instancia = new ActiveReservations(tramite.duracion, req.body.fechaInicio, req.body.fechaInicio);
+    let fechaFin = DateTime.fromISO(req.body.fechaInicio, {zone: "America/Denver"}).plus({minutes: tramite.duracion}).setZone("UTC");
+    var ventanillaId = await instancia.validateReservationDate(fechaInicio, fechaFin); 
+
+    if (ventanillaId == -1) {
+      return res.status(400).json({
+        mensaje: "La fecha selecciona no disponible para este tramite"
+      })
     }
-   
+
+    const usuario = await Usuario.findOne({
+      where: {
+        correo: req.tokenParseado.usuario
+      }
+    });
+
+    let usuarioId = usuario.id;
+    if (req.body.usuarioId) {
+      if (req.tokenParseado.grupos.includes("Admin")) {
+        usuarioId = req.body.usuarioId;
+      }else{
+        return res.status(403).json({mensaje: "No tiene permiso de ejecutar este request"})
+      }
+    }
+
     const [updateNumberOfAffectedRows] = await model.update({
-      nombre: req.body.nombre,
-      duracion: req.body.duracion,
-      activo: req.body.activo,
+      usuario_id: usuarioId,
+      ventanilla_id: ventanillaId,
+      tramite_id: tramite.id,
+      fecha_inicio: fechaInicio.setZone("UTC").toSQL(),
+      fecha_fin: fechaFin.setZone("UTC").toSQL(),
     },{
       where: {
         id: req.query.id
       }
     });
 
-    if (updateNumberOfAffectedRows == 0 && rolesIds.length != req.body.roles.length) {
-      throw "Error al actualizar el tramite"
+    if (updateNumberOfAffectedRows == 0) {
+      throw "Error al actualizar la reservacion";
     }
 
-    await t.commit();
   } catch (error) {
-    await t.rollback();
     console.error(error);
     return res.status(500).send();
   }
 
   return res.status(200).json({
-    mensaje: "El tramite se ha actualizado correctamente",
+    mensaje: "La reservacion se ha creado correctamente",
   });
 };
 
@@ -219,15 +247,27 @@ const actualizar = async (req, res) => {
 
   if (!existe) {
     return res.status(400).json({
-      mensaje: "El Tramite no existe",
+      mensaje: "La reservacion no existe no existe",
     });
   }
 
   try {
-    await model.destroy({
+    Query = {
+      id: req.query.id
+    };
+
+    const usuario = await Usuario.findOne({
       where: {
-        id: req.query.id
+        correo: req.tokenParseado.usuario
       }
+    });
+
+    if (!req.tokenParseado.grupos.includes("Admin")) {
+      Query.usuario_id = usuario.id
+    }
+
+    await model.destroy({
+      where: Query
     });
   } catch (error) {
     console.error(error);
@@ -235,7 +275,7 @@ const actualizar = async (req, res) => {
   }
 
   return res.status(200).json({
-    mensaje: "El tramite se ha borrado correctamente",
+    mensaje: "La reservacion se ha borrado correctamente",
   });
 };
 
@@ -245,8 +285,8 @@ module.exports = {
   crear,
   validacionListar,
   listar,
-//   validacionActualizar,
-//   actualizar,
-//   validacionEliminar,
-//   eliminar
+  validacionActualizar,
+  actualizar,
+  validacionEliminar,
+  eliminar
 };

@@ -22,7 +22,10 @@ class ActiveReservations {
 	holidays = [];
 	
 	ventanillasActivas = [];
-	ventanillasActivasIds
+
+	ventanillasActivasIds = [];
+
+	ventanillasDisponiblesPorDia = {};
 
 	constructor(duracionTramite, fechaInicio, fechaFin) {
 		this.duracionTramite = duracionTramite;
@@ -42,17 +45,17 @@ class ActiveReservations {
 			second: 59,
 			millisecond: 999
 		});
-		this.fechaInicio = DateTime.fromISO(this.fechaInicioLocal.toISO(), {zone: "America/Denver"}).toISO();
-		this.fechaFin = DateTime.fromISO(this.fechaFinLocal.toISO(), {zone: "America/Denver"}).toISO();
+		this.fechaInicio = DateTime.fromISO(this.fechaInicioLocal.toISO(), {zone: "America/Denver"}).setZone("UTC").toISO();
+		this.fechaFin = DateTime.fromISO(this.fechaFinLocal.toISO(), {zone: "America/Denver"}).setZone("UTC").toISO();
 		console.error(this.fechaFin);
 	}
 
 	isHoliday(dateObj) {
-		if (diasFestivos.length == 0) {
+		if (this.holidays.length == 0) {
 			return false;
 		} else {
-			result = this.holidays.filter(date => {
-				return DateTime.fromISO(date.fecha).setZone("America/Denver").set({
+			let result = this.holidays.filter(date => {
+				return DateTime.fromISO(date.fecha, {zone: "UTC"}).setZone("America/Denver").set({
 					hour: 0,
 					minute: 0,
 					second: 0,
@@ -100,11 +103,10 @@ class ActiveReservations {
 						[Op.gte]: this.fechaInicio,
 					},
 					fecha_fin: {
-						[Op.gte]: this.fechaFin
+						[Op.lte]: this.fechaFin
 					}
 				}
 			});
-	
 			this.ventanillasActivas = await Ventanillas.findAll({
 				where: {
 					activo: true
@@ -118,17 +120,17 @@ class ActiveReservations {
 		} catch (error) {
 			console.error(error);
 		}
-
+		let returnData = this.getIntervalDates(this.fechaInicioLocal, this.fechaFinLocal);
+		console.log(returnData);
 		this.groupBy();
-		returnData = await this.getIntervalDates(this.fechaInicioLocal, this.fechaFinLocal);
-
-		ventanillaExcluidas = [];
+		
+		let ventanillaExcluidas = [];
 		for (const day in this.ReservacionesActivasAgrupadas) {
-			reservaciones = [];
-			if (ReservacionesActivasAgrupadas.hasOwnProperty.call(this.ReservacionesActivasAgrupadas, day)) {
-				const ventanillasEnUso = ReservacionesActivasAgrupadas[day][ventanillas];
+			let reservaciones = [];
+			if (Object.hasOwnProperty.call(this.ReservacionesActivasAgrupadas, day)) {
+				const ventanillasEnUso = this.ReservacionesActivasAgrupadas[day];
 				for (const ventanilla in ventanillasEnUso) {
-					if (reservaciones.ventanillas.hasOwnProperty.call(ventanillasEnUso, ventanilla)) {
+					if (Object.hasOwnProperty.call(ventanillasEnUso, ventanilla)) {
 						const datosVentanilla = ventanillasEnUso[ventanilla];
 						reservaciones = concat(reservaciones, datosVentanilla.fechasActivas);
 						if ((datosVentanilla.suma + this.duracionTramite) > datosVentanilla.limite) {
@@ -137,9 +139,11 @@ class ActiveReservations {
 					}
 				}
 			}
-			ventanillasDisponibles = diff(this.ventanillasActivasIds, ventanillaExcluidas);
+			let ventanillasDisponibles = diff(this.ventanillasActivasIds, ventanillaExcluidas);
+			
+			this.ventanillasDisponiblesPorDia[day] = ventanillasDisponibles;
 
-			index = returnData.findIndex(item => {
+			let index = returnData.findIndex(item => {
 				return item.dia == day;
 			});
 
@@ -147,30 +151,112 @@ class ActiveReservations {
 			returnData[index].reservaciones = reservaciones;
 		}
 
+		return returnData;
+	}
+
+	/**
+	 * Valida si existe al menos una ventanilla activa para atender la
+	 * reservación, en caso de ser correcto regresa el id de la ventanilla
+	 * de lo contrario regresa un -1
+	 * 
+	 * !Las fechas tienen que ser en UTC!
+	 * @param {DateTime} fechaInicio 
+	 * @param {DateTime} fechaFin 
+	 */
+	async validateReservationDate(fechaInicio, fechaFin) {
+		let fecha = fechaInicio.setZone("America/Denver").toISODate();
+		let fechaDisponibles = await this.availableDates();
+		let indice = fechaDisponibles.findIndex(item => {
+			return item.dia == fecha;
+		});
+
+		if (!fechaDisponibles[indice].fechasDisponibles) {
+			return -1
+		}
+
+		fechaFin.setZone("America/Denver");
+		if (this.ReservacionesActivasAgrupadas[fecha]) {
+			let ventanillasDisponibles = [];
+			let ventanillasDisponiblesId = [];
+			for (const ventanillaId in this.ReservacionesActivasAgrupadas[fecha]) {
+				if (Object.hasOwnProperty.call(this.ReservacionesActivasAgrupadas[fecha], ventanillaId)) {
+					const fechasActivas = this.ReservacionesActivasAgrupadas[fecha][ventanillaId]['fechasActivas'];
+					let suma = this.ReservacionesActivasAgrupadas[fecha][ventanillaId]['suma'] + this.duracionTramite;
+					let limite = this.ReservacionesActivasAgrupadas[fecha][ventanillaId]['limite'];
+					let fechaInicioDisponible = true;
+					let fechaFinDisponible = true;
+					let abarcaReservacionesCreadas = false;
+					fechasActivas.forEach(reservacion => {
+						if(fechaInicio >= reservacion.start && fechaInicio <= reservacion.end){
+							fechaInicioDisponible = false;
+						}
+
+						if(fechaFin >= reservacion.start && fechaFin <= reservacion.end){
+							fechaFinDisponible = false;
+						}
+						
+						if( reservacion.start >= fechaInicio  && reservacion.start <= fechaFin){
+							abarcaReservacionesCreadas = false;
+						}
+
+						if( reservacion.end >= fechaInicio  && reservacion.end <= fechaFin){
+							abarcaReservacionesCreadas = false;
+						}
+					});
+
+					if (fechaFinDisponible && fechaInicioDisponible && !abarcaReservacionesCreadas && suma <= limite) {
+						ventanillasDisponibles.push({
+							suma: suma,
+							ventanillaId: ventanillaId
+						});
+
+						ventanillasDisponiblesId.push(ventanillaId);
+					}
+				}
+			}
+			
+			let ventanillasVacias = diff(this.ventanillasActivasIds, ventanillasDisponiblesId);
+
+			if (ventanillasVacias.length != 0) {
+				return ventanillasVacias[0];
+			}else{
+				return ventanillasDisponibles.reduce(function(prev, curr) {
+					return prev.suma < curr.suma ? prev : curr;
+				}).ventanillaId;
+			}
+
+		}else{
+			return this.ventanillasActivasIds[0];
+		}
+
+		
+
 	}
 
 	groupBy() {
 		this.ReservacionesActivas.forEach(reservacion => {
-			date = DateTime.fromISO(reservacion.fechaInicio).setZone("America/Denver").toISODate();
-			if (!this.ReservacionesActivas[date]) {
-				agrupar[date] = {};
+			let date = DateTime.fromSQL(reservacion.fecha_inicio).setZone("America/Denver").toISODate();
+			let exist = false;
+			if (!this.ReservacionesActivasAgrupadas[date]) {
+				this.ReservacionesActivasAgrupadas[date] = {};
 			}
-
-			if (this.ReservacionesActivas[date][reservacion.ventanilla_id]) {
-				this.ReservacionesActivas[date][reservacion.ventanilla_id]["suma"] += reservacion.duracion;
-				this.ReservacionesActivas[date][reservacion.ventanilla_id]["fechasActivas"].push({
-					"start": reservacion.fecha_inicio,
-					"end": reservacion.fecha_fin,
-					"colors": "#d4d4d4"
+			if (this.ReservacionesActivasAgrupadas[date][reservacion.ventanilla_id]) {
+				this.ReservacionesActivasAgrupadas[date][reservacion.ventanilla_id]["suma"] += reservacion.duracion;
+				this.ReservacionesActivasAgrupadas[date][reservacion.ventanilla_id]["fechasActivas"].push({
+					"start": DateTime.fromSQL(reservacion.fecha_inicio, {zone: "UTC"}).setZone("America/Denver"),
+					"end":  DateTime.fromSQL(reservacion.fecha_fin, {zone: "UTC"}).setZone("America/Denver"),
+					"colors": "#d4d4d4",
+					"ventanilla": reservacion.ventanilla_id
 				});
 			} else {
-				this.ReservacionesActivas[date][reservacion.ventanilla_id] = {
+				this.ReservacionesActivasAgrupadas[date][reservacion.ventanilla_id] = {
 					suma: reservacion.duracion,
 					limite: reservacion.horas_atencion,
 					fechasActivas: [{
-						"start": reservacion.fecha_inicio,
-						"end": reservacion.fecha_fin,
-						"colors": "#d4d4d4"
+						"start": DateTime.fromSQL(reservacion.fecha_inicio,{zone: "UTC"}).setZone("America/Denver"),
+						"end":  DateTime.fromSQL(reservacion.fecha_fin, {zone: "UTC"}).setZone("America/Denver"),
+						"colors": "#d4d4d4",
+						"ventanilla": reservacion.ventanilla_id
 					}]
 				};
 			}
